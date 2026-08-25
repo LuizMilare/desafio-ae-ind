@@ -1,5 +1,0 @@
-[sources.sql_database]
-schema_names = ["sales"]
-
-[data_writer]
-timestamp_timezone = "UTC"
