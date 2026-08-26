@@ -1,0 +1,25 @@
+sources:
+  - name: postgres
+    description: Simulação dos diferentes sistemas da Adventure Works em PostgreSQL.
+    schema: postgres_adventureworks
+    tables:
+      - name: salesorderheader
+        description: Cabeçalho de vendas.
+      - name: salesorderdetail
+        description: Detalhes de vendas por item.
+      - name: salesorderheadersalesreason
+        description: ID da Razão da venda
+      - name: salesreason
+        description: Descrição da razão de venda
+      - name: address
+        description: Descrição de enderecos, contendo também o ID de stateprovince
+      - name: stateprovince
+        description: Estados, províncias e países
+      - name: countryregion
+        description: Relaçao com stateprovince
+      - name: product
+        description: Cadastro de produtos
+      - name: productsubcategory
+        description: Subcategoria de produtos
+      - name: productcategory
+        description: Categoria de produtos
