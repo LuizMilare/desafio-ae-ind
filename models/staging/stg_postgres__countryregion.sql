@@ -7,7 +7,7 @@ with
     , renomeado as (
         select
             cast(countryregioncode as string) as countryregioncode
-            , cast(name as string) as name
+            , cast(name as string) as countryregion_name
             , cast(modifieddate as timestamp) as modifieddate
             , cast(_dlt_load_id as string) as _dlt_load_id
             , cast(_dlt_id as string) as _dlt_id
