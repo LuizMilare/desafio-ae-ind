@@ -1,7 +1,7 @@
 with
-    fonte_productsubcategory as (
+    fonte_productcategory as (
         select *
-        from {{ source('postgres', 'productsubcategory') }}
+        from {{ source('postgres', 'productcategory') }}
     )
     
     , renomeado as (
@@ -12,7 +12,7 @@ with
             , cast(modifieddate as timestamp) as modifieddate
             , cast(_dlt_load_id as string) as _dlt_load_id
             , cast(_dlt_id as string) as _dlt_id
-        from fonte_productsubcategory
+        from fonte_productcategory
     )
 
 select *
