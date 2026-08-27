@@ -5,21 +5,66 @@ sources:
     tables:
       - name: salesorderheader
         description: Cabeçalho de vendas.
+        columns:
+          - name: salesorderid
+            data_tests:
+              - unique
+              - not_null
       - name: salesorderdetail
         description: Detalhes de vendas por item.
+        columns:
+          - name: salesorderdetailid
+            data_tests:
+              - unique
+              - not_null
       - name: salesorderheadersalesreason
         description: ID da Razão da venda
       - name: salesreason
         description: Descrição da razão de venda
+        columns:
+          - name: salesreasonid
+            data_tests:
+              - unique
+              - not_null
       - name: address
         description: Descrição de enderecos, contendo também o ID de stateprovince
+        columns:
+          - name: addressid
+            data_tests:
+              - unique
+              - not_null
       - name: stateprovince
         description: Estados, províncias e países
+        columns:
+          - name: stateprovinceid
+            data_tests:
+              - unique
+              - not_null
       - name: countryregion
         description: Relaçao com stateprovince
+        columns:
+          - name: countryregioncode
+            data_tests:
+              - unique
+              - not_null
       - name: product
         description: Cadastro de produtos
+        columns:
+          - name: productid
+            data_tests:
+              - unique
+              - not_null
       - name: productsubcategory
         description: Subcategoria de produtos
+        columns:
+          - name: productsubcategoryid
+            data_tests:
+              - unique
+              - not_null
       - name: productcategory
         description: Categoria de produtos
+        columns:
+          - name: productcategoryid
+            data_tests:
+              - unique
+              - not_null
