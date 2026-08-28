@@ -1,0 +1,47 @@
+
+models:
+  - name: fact_sales
+    description: 'Tabela fato de vendas. Grão: salesorderdetail - a nível de produto por ordem de venda'
+    columns:
+      - name: fk_salesorderid
+        description: Chave da Sales Order Header - Não única
+      - name: pk_salesorderdetailid
+        description: Chave da Sales Order Detail - Única
+      - name: fk_territoryid
+        description: Chave do território de vendas
+      - name: fk_billtoaddressid
+        description: Chave do endereço de cobrança (Tabela dim_address)
+      - name: fk_shiptoaddressid
+        description: Chave do endereço de envio (Tabela dim_address)
+      - name: fk_productid
+        description: Chave de produto (Tabela dim_products)
+      - name: revisionnumber
+        description: Número de revisão
+      - name: orderdate
+        description: Data da ordem
+      - name: duedate
+        description: Data de vencimento
+      - name: shipdate
+        description: Data de envio
+      - name: status
+        description: status do pedido
+      - name: onlineorderflag
+        description: Indica se a compra foi feita online
+      - name: purchaseordernumber
+        description: Número da ordem de compra
+      - name: subtotal
+        description: Subtotal da Order Header
+      - name: taxamt
+        description: Total em impostos da Order Header
+      - name: freight
+        description: Total em frete da Order Header
+      - name: totaldue
+        description: Total devido da Order Header
+      - name: comment
+        description: Comentários da Order Header
+      - name: orderqty
+        description: 'Quantidade do produto na ordem. Grão: Sales Order Detail'
+      - name: unitprice
+        description: Preço por unidade de produto
+      - name: unitpricediscount
+        description: Desconto por unidade de produto

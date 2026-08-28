@@ -1,0 +1,41 @@
+
+models:
+  - name: dim_products
+    description: description
+    columns:
+      - name: pk_productid
+        description: Chave primária de produtos
+      - name: product_name
+        description: Descrição do produto
+      - name: productnumber
+        description: Código interno do produto
+      - name: color
+        description: Principal cor do produto
+      - name: standardcost
+        description: Custo de tabela
+      - name: listprice
+        description: Preço de tabela
+      - name: size
+        description: Tamanho do produto
+      - name: sizeunitmeasurecode
+        description: Unidade de medida para o tamanho
+      - name: weightunitmeasurecode
+        description: Unidade de medida para o peso
+      - name: weight
+        description: Peso do produto
+      - name: productline
+        description: Linha do produto
+      - name: class
+        description: Classe do produto
+      - name: style
+        description: Estilo do produto
+      - name: sellstartdate
+        description: Data inicial de comercialização
+      - name: sellenddate
+        description: Data final de comercialização
+      - name: discontinueddate
+        description: Data de descontinuação
+      - name: productsubcategory_name
+        description: Descrição da subcategoria
+      - name: productcategory_name
+        description: Descrição da categoria

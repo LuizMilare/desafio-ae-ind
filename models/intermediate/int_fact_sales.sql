@@ -11,10 +11,12 @@ with
 
     , joined as (
         select
-            salesorderheaders.pk_salesorderid
+            salesorderheaders.pk_salesorderid as fk_salesorderid
+            salesorderdetails.pk_salesoderdetailid
             , salesorderheaders.fk_territoryid
             , salesorderheaders.fk_billtoaddressid
             , salesorderheaders.fk_shiptoaddressid
+            , salesorderdetails.fk_productid
             , salesorderheaders.revisionnumber
             , salesorderheaders.orderdate
             , salesorderheaders.duedate
@@ -22,16 +24,11 @@ with
             , salesorderheaders.status
             , salesorderheaders.onlineorderflag
             , salesorderheaders.purchaseordernumber
-            , salesorderheaders.accountnumber
-            , salesorderheaders.creditcardapprovalcode
             , salesorderheaders.subtotal
             , salesorderheaders.taxamt
             , salesorderheaders.freight
             , salesorderheaders.totaldue
             , salesorderheaders.comment
-            , salesorderdetails.fk_productid
-            , salesorderdetails.fk_specialofferid
-            , salesorderdetails.carriertrackingnumber
             , salesorderdetails.orderqty
             , salesorderdetails.unitprice
             , salesorderdetails.unitpricediscount
