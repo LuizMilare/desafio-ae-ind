@@ -3,18 +3,33 @@ models:
   - name: fact_sales
     description: 'Tabela fato de vendas. Grão: salesorderdetail - a nível de produto por ordem de venda'
     columns:
-      - name: fk_salesorderid
-        description: Chave da Sales Order Header - Não única
       - name: pk_salesorderdetailid
         description: Chave da Sales Order Detail - Única
+        data_tests:
+          - unique
+          - not_null  
+      - name: fk_salesorderid
+        description: Chave da Sales Order Header - Não única
       - name: fk_territoryid
         description: Chave do território de vendas
       - name: fk_billtoaddressid
         description: Chave do endereço de cobrança (Tabela dim_address)
+        data_tests:
+          - relationships:
+              to: ref('dim_addresses')
+              field: pk_addressid
       - name: fk_shiptoaddressid
         description: Chave do endereço de envio (Tabela dim_address)
+        data_tests:
+          - relationships:
+              to: ref('dim_addresses')
+              field: pk_addressid
       - name: fk_productid
         description: Chave de produto (Tabela dim_products)
+        data_tests:
+          - relationships:
+              to: ref('dim_products')
+              field: pk_productid
       - name: revisionnumber
         description: Número de revisão
       - name: orderdate
@@ -45,3 +60,5 @@ models:
         description: Preço por unidade de produto
       - name: unitpricediscount
         description: Desconto por unidade de produto
+      - name: salesorderdetailsubtotal
+        description: Subtotal a nível do detalhe da ordem (a nível do produto)

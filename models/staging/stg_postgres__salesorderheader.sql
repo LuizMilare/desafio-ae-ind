@@ -24,10 +24,10 @@ with
             , cast(purchaseordernumber as string) as purchaseordernumber 
             , cast(accountnumber as string) as accountnumber
             , cast(creditcardapprovalcode as string) as creditcardapprovalcode
-            , cast(subtotal as float) as subtotal
-            , cast(taxamt as float) as taxamt
-            , cast(freight as float) as freight
-            , cast(totaldue as float) as totaldue
+            , cast(subtotal as decimal(38, 9)) as subtotal
+            , cast(taxamt as decimal(38, 9)) as taxamt
+            , cast(freight as decimal(38, 9)) as freight
+            , cast(totaldue as decimal(38, 9)) as totaldue
             , cast(comment as string) as comment
             , cast(rowguid as string) as rowguid
             , cast(modifieddate as timestamp) as modifieddate

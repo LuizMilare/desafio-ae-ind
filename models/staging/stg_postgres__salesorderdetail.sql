@@ -12,8 +12,8 @@ with
             , cast(specialofferid as int) as fk_specialofferid
             , cast(carriertrackingnumber as string) as carriertrackingnumber
             , cast(orderqty as int) as orderqty
-            , cast(unitprice as float) as unitprice
-            , cast(unitpricediscount as float) as unitpricediscount
+            , cast(unitprice as decimal(38, 9)) as unitprice
+            , cast(unitpricediscount as decimal(38, 9)) as unitpricediscount
             , cast(rowguid as string) as rowguid
             , cast(modifieddate as timestamp) as modifieddate
             , cast(_dlt_load_id as string) as _dlt_load_id
