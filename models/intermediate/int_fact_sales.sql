@@ -12,7 +12,7 @@ with
     , joined as (
         select
             salesorderheaders.pk_salesorderid as fk_salesorderid
-            salesorderdetails.pk_salesoderdetailid
+            , salesorderdetails.pk_salesorderdetailid
             , salesorderheaders.fk_territoryid
             , salesorderheaders.fk_billtoaddressid
             , salesorderheaders.fk_shiptoaddressid
@@ -32,6 +32,7 @@ with
             , salesorderdetails.orderqty
             , salesorderdetails.unitprice
             , salesorderdetails.unitpricediscount
+            , salesorderdetails.orderqty * salesorderdetails.unitprice as salesorderdetailsubtotal
         from salesorderheaders
         left join salesorderdetails on salesorderheaders.pk_salesorderid = salesorderdetails.fk_salesorderid
     )

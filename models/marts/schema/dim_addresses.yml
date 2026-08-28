@@ -5,6 +5,9 @@ models:
     columns:
       - name: pk_addressid
         description: Chave primária de endereços
+        data_tests:
+          - unique
+          - not_null
       - name: addressline1
         description: Descrição do endereço
       - name: addressline2

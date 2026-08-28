@@ -5,6 +5,9 @@ models:
     columns:
       - name: pk_productid
         description: Chave primária de produtos
+        data_tests:
+          - unique
+          - not_null
       - name: product_name
         description: Descrição do produto
       - name: productnumber
