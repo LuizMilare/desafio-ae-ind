@@ -1,0 +1,23 @@
+
+models:
+  - name: dim_addresses
+    description: Tabela de dimenção de endereços, contendo País/Região, Estado/Província, Cidade e endereço
+    columns:
+      - name: pk_addressid
+        description: Chave primária de endereços
+      - name: addressline1
+        description: Descrição do endereço
+      - name: addressline2
+        description: Descrição secundária do endereço (equivalente ao complemento)
+      - name: city
+        description: Cidade
+      - name: postalcode
+        description: Código postal
+      - name: spatiallocation
+        description: Código de localização, em formato [MS-SSCLRT] - Pode ser convertido para latitude-longitude
+      - name: stateprovincecode
+        description: Abreviação do estado/província
+      - name: countryregioncode
+        description: Abreviação do país/região
+      - name: stateprovince_name
+        description: Descrição do estado/província
