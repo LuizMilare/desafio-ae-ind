@@ -1,7 +1,7 @@
 
 models:
   - name: dim_products
-    description: description
+    description: Tabela de dimenção de produtos, contendo nome, características físicas, categoria, custo, preço e dados de venda
     columns:
       - name: pk_productid
         description: Chave primária de produtos
