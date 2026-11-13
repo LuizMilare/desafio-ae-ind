@@ -9,8 +9,12 @@ ou teste responsável é indicado.
 - Fonte: schema `postgres_adventureworks` (Databricks, catálogo `dev`), carregado
   pelo dlt a partir do banco AdventureWorks.
 - Período dos pedidos: 31/05/2011 a 30/06/2014. **2011 e 2014 são anos
-  parciais** (2011 começa em 31/05; 2014 termina em 30/06 e junho/2014 tem
-  volume muito baixo). Comparações ano a ano só são justas entre 2012 e 2013.
+  parciais** (2011 começa em 31/05; 2014 termina em 30/06).
+  Comparações ano a ano só são justas entre 2012 e 2013 ou entre os mesmos meses
+  de cada ano.
+- **Junho/2014 está incompleto:** 939 pedidos, cerca de US$ 49 mil e nenhuma
+  venda de bicicletas. Trate como corte de dados e considere excluí-lo de
+  tendências e de KPIs de crescimento.
 - Granularidade da tabela fato (`fact_sales`): uma linha por item de pedido
   (`salesorderdetail`). Total: 121.317 linhas, 31.465 pedidos.
 
@@ -41,6 +45,9 @@ Decisões:
   ele é consistente com `subtotal + taxamt + freight`.
 - Descontos são em média 0,48% das vendas brutas. Quase todo o valor vem de
   preço cheio.
+- **Todos os descontos estão em pedidos de revendedores.** Nenhuma linha de
+  pedido online tem desconto. Cerca de 2,7% das linhas têm desconto e as
+  Bikes concentram cerca de 94% do valor descontado.
 
 ## 3. Geografia (cidade, estado, país)
 
@@ -63,6 +70,14 @@ O pedido tem dois endereços: cobrança (`fk_billtoaddressid`) e envio
 - Tipos aceitos: `Store` e `Individual` (teste `accepted_values`).
 - O ranking de clientes (pergunta c) usa `customer_name`, mas a chave de
   agrupamento é `pk_customerid`, para não juntar clientes com nomes iguais.
+- **Canal de venda:** `onlineorderflag` define o canal. No dataset, o canal
+  coincide com o tipo de cliente: os 3.806 pedidos de revendedor
+  (`onlineorderflag` falso) são sempre de clientes `Store`, e os 27.659 pedidos
+  online são sempre de clientes `Individual`. Os dois canais têm perfis muito
+  diferentes (revendedores: cerca de 12% dos pedidos e 73% das vendas líquidas;
+  valor médio por pedido de cerca de US$ 21.100 contra cerca de US$ 1.060 no
+  online). Por isso o canal deve ser um filtro disponível em todas as páginas
+  do dashboard, e médias que misturam os dois canais precisam dessa ressalva.
 
 ## 5. Cartão de crédito
 
@@ -80,8 +95,16 @@ está na tabela ponte `bridge_sales_order_reasons` (pedido × motivo), ligada a
 - **Duplicidade entre motivos:** um pedido com dois motivos entra uma vez em
   cada. Somar pedidos ou valores por motivo gera total maior que o real.
   Não some entre motivos e use `count(distinct fk_salesorderid)` para pedidos.
-- **Pedidos sem motivo** (cerca de 8.453) não aparecem na ponte. Para análises
-  por motivo eles ficam de fora; para totais gerais, use a fato sem a ponte.
+- **Motivos existem apenas para pedidos online.** Nenhum dos 3.806 pedidos de
+  revendedor tem motivo de venda, e 83% dos pedidos online têm pelo menos um.
+  Qualquer análise por motivo descreve somente clientes online, e a visão no
+  dashboard deve deixar isso explícito.
+- **Pedidos sem motivo** (8.453) não aparecem na ponte: 3.806 de revendedores e
+  4.647 online. Para análises por motivo eles ficam de fora (ou entram como
+  "Sem motivo"); para totais gerais, use a fato sem a ponte.
+- **Efeito da duplicidade:** 4.482 pedidos têm mais de um motivo (27.647 pares
+  pedido × motivo para 23.012 pedidos). Somar as vendas líquidas por motivo dá
+  cerca de US$ 30,9 milhões para pedidos que somam US$ 22,4 milhões.
 - **"Promoção" (pergunta f):** corresponde ao motivo `On Promotion`
   (`reasontype` = `Promotion`). O produto de maior quantidade nesse motivo é a
   garrafa d'água, com 546 unidades.
