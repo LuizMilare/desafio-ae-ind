@@ -10,8 +10,13 @@ models:
           - not_null
       - name: product_name
         description: Descrição do produto
+        data_tests:
+          - not_null
       - name: productnumber
         description: Código interno do produto
+        data_tests:
+          - unique
+          - not_null
       - name: color
         description: Principal cor do produto
       - name: standardcost

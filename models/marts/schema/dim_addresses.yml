@@ -14,6 +14,8 @@ models:
         description: Descrição secundária do endereço (equivalente ao complemento)
       - name: city
         description: Cidade
+        data_tests:
+          - not_null
       - name: postalcode
         description: Código postal
       - name: spatiallocation
