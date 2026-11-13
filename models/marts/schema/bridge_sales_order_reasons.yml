@@ -1,0 +1,21 @@
+
+models:
+  - name: bridge_sales_order_reasons
+    description: Tabela ponte entre pedidos e razões de venda. Grão uma linha por pedido e razão de venda. Um pedido pode ter várias razões e pedidos sem razão não aparecem aqui
+    columns:
+      - name: fk_salesorderid
+        description: Chave da Sales Order Header (Tabela fact_sales)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('fact_sales')
+                field: fk_salesorderid
+      - name: fk_salesreasonid
+        description: Chave da razão de venda (Tabela dim_sales_reasons)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_sales_reasons')
+                field: pk_salesreasonid

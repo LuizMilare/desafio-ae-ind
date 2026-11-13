@@ -12,6 +12,21 @@ models:
         description: Chave da Sales Order Header - Não única
         data_tests:
           - not_null
+      - name: fk_customerid
+        description: Chave do cliente (Tabela dim_customers)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_customers')
+                field: pk_customerid
+      - name: fk_creditcardid
+        description: Chave do cartão de crédito (Tabela dim_credit_cards). Nulo em pedidos sem cartão
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_credit_cards')
+                field: pk_creditcardid
       - name: fk_territoryid
         description: Chave do território de vendas
       - name: fk_billtoaddressid
@@ -38,9 +53,13 @@ models:
       - name: revisionnumber
         description: Número de revisão
       - name: orderdate
-        description: Data da ordem
+        description: Data da ordem (Tabela dim_dates)
         data_tests:
           - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_dates')
+                field: pk_date
       - name: duedate
         description: Data de vencimento
       - name: shipdate
@@ -74,6 +93,14 @@ models:
         data_tests:
           - not_null
       - name: unitpricediscount
-        description: Desconto por unidade de produto
+        description: Desconto por unidade de produto, como fração do preço (0 a 1)
       - name: salesorderdetailsubtotal
-        description: Subtotal a nível do detalhe da ordem (a nível do produto)
+        description: Vendas brutas a nível do detalhe da ordem (orderqty * unitprice), antes de descontos
+      - name: salesorderdetaildiscount
+        description: Valor do desconto a nível do detalhe da ordem (orderqty * unitprice * unitpricediscount)
+        data_tests:
+          - not_null
+      - name: salesorderdetailnetsubtotal
+        description: Vendas líquidas a nível do detalhe da ordem, ou seja, vendas brutas menos desconto
+        data_tests:
+          - not_null
