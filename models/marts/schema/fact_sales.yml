@@ -10,23 +10,28 @@ models:
           - not_null  
       - name: fk_salesorderid
         description: Chave da Sales Order Header - Não única
+        data_tests:
+          - not_null
       - name: fk_territoryid
         description: Chave do território de vendas
       - name: fk_billtoaddressid
         description: Chave do endereço de cobrança (Tabela dim_address)
         data_tests:
+          - not_null
           - relationships:
               to: ref('dim_addresses')
               field: pk_addressid
       - name: fk_shiptoaddressid
         description: Chave do endereço de envio (Tabela dim_address)
         data_tests:
+          - not_null
           - relationships:
               to: ref('dim_addresses')
               field: pk_addressid
       - name: fk_productid
         description: Chave de produto (Tabela dim_products)
         data_tests:
+          - not_null
           - relationships:
               to: ref('dim_products')
               field: pk_productid
@@ -34,12 +39,18 @@ models:
         description: Número de revisão
       - name: orderdate
         description: Data da ordem
+        data_tests:
+          - not_null
       - name: duedate
         description: Data de vencimento
       - name: shipdate
         description: Data de envio
       - name: status
         description: status do pedido
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4, 5, 6]
       - name: onlineorderflag
         description: Indica se a compra foi feita online
       - name: purchaseordernumber
@@ -56,8 +67,12 @@ models:
         description: Comentários da Order Header
       - name: orderqty
         description: 'Quantidade do produto na ordem. Grão: Sales Order Detail'
+        data_tests:
+          - not_null
       - name: unitprice
         description: Preço por unidade de produto
+        data_tests:
+          - not_null
       - name: unitpricediscount
         description: Desconto por unidade de produto
       - name: salesorderdetailsubtotal
