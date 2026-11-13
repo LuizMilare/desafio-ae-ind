@@ -1,11 +1,93 @@
-# analytics-engineering
-Material do Livro Analytics Engineering
+# desafio-ae-ind
 
-Neste respositório estão disponibilizados materiais de apoio ao Livro Analytics Engineering.
+Projeto dbt do desafio de Analytics Engineering sobre o dataset AdventureWorks:
+transforma os dados brutos de vendas em um modelo dimensional (star schema) no
+Databricks, com documentação e testes, para alimentar um dashboard de vendas.
 
-## Sumário
+## Perguntas de negócio
 
-* [Estudo de Caso Northwind](Northwind/README.md)
-* [Extração de dados via Singer Taps](Extract/README.md)
-* [Transformação via dbt](https://github.com/dpavancini/dbt_northwind/tree/master/README.md)
-* [Visualizando no Metabase](Visualizar/README.md)
+O modelo foi desenhado para responder:
+
+- **a.** Pedidos, quantidade e valor por produto, tipo de cartão, motivo de venda,
+  data, cliente, status, cidade, estado e país.
+- **b.** Produtos com maior valor médio por pedido ((vendas brutas − descontos) /
+  pedidos), por mês, ano, cidade, estado e país.
+- **c.** Top 10 clientes por valor.
+- **d.** Top 5 cidades por valor.
+- **e.** Série temporal de pedidos, quantidade e valor por mês e ano.
+- **f.** Produto mais vendido (em unidades) no motivo de venda "Promoção".
+
+As definições das métricas e as decisões de modelagem estão em
+[docs/regras_de_negocio.md](docs/regras_de_negocio.md).
+
+## Stack
+
+- Data warehouse: Databricks (catálogo `dev`)
+- Carga: dlt, para o schema `postgres_adventureworks`
+- Transformação: dbt (executado no dbt Cloud)
+- Visualização: dashboard sobre as tabelas da camada `marts`
+
+## Camadas
+
+```
+models/
+  staging/        stg_postgres__<tabela>.sql + _sources.yml   (views)
+  intermediate/   int_<nome>.sql                              (views)
+  marts/          dim_*, fact_*, bridge_*                     (tabelas)
+  marts/schema/   um .yml por modelo de mart (docs e testes)
+tests/            testes singulares de regras de negócio
+```
+
+- **staging:** renomeia e tipa as colunas de cada tabela de origem. Não carrega
+  o número do cartão de crédito.
+- **intermediate:** junta as tabelas de origem e calcula as medidas.
+- **marts:** modelo dimensional final, materializado como tabela.
+
+## Modelo dimensional
+
+`fact_sales` tem grão de item de pedido (`salesorderdetail`) e se liga a:
+
+| Tabela | Descrição | Chave na fato |
+|---|---|---|
+| `dim_products` | produtos, subcategorias e categorias | `fk_productid` |
+| `dim_customers` | clientes (loja ou pessoa) | `fk_customerid` |
+| `dim_addresses` | endereço, cidade, estado e país | `fk_shiptoaddressid`, `fk_billtoaddressid` |
+| `dim_credit_cards` | tipo do cartão | `fk_creditcardid` |
+| `dim_dates` | calendário diário | `orderdate` |
+| `dim_sales_reasons` | motivos de venda | via `bridge_sales_order_reasons` |
+
+Pedidos e motivos de venda são muitos-para-muitos, por isso existe a tabela
+ponte `bridge_sales_order_reasons` (pedido × motivo), ligada à fato por
+`fk_salesorderid`.
+
+Medidas da fato: `salesorderdetailsubtotal` (vendas brutas),
+`salesorderdetaildiscount` (desconto) e `salesorderdetailnetsubtotal` (vendas
+líquidas). Os valores `subtotal`, `taxamt`, `freight` e `totaldue` são do
+cabeçalho do pedido e se repetem em cada linha; não devem ser somados.
+
+## Como executar
+
+No dbt Cloud (ou em qualquer ambiente dbt com acesso ao Databricks):
+
+```bash
+dbt run                       # constrói staging, intermediate e marts
+dbt test --select source:*    # testes nas tabelas de origem
+dbt test                      # todos os testes
+dbt docs generate             # documentação e linhagem
+```
+
+`dbt build` executa modelos e testes em ordem de dependência.
+
+## Testes
+
+Os testes cobrem:
+
+- chaves únicas e não nulas nas fontes e em todas as tabelas dos marts;
+- integridade referencial (`relationships`) entre a fato, as dimensões e a ponte;
+- valores aceitos (status do pedido, tipo de cliente);
+- regras de negócio em `tests/`, incluindo a validação das vendas brutas de 2011
+  (US$ 12.646.112,16), consistência entre vendas brutas, desconto e líquidas, e
+  consistência do `totaldue`.
+
+A lista completa e a justificativa de cada regra estão em
+[docs/regras_de_negocio.md](docs/regras_de_negocio.md).
