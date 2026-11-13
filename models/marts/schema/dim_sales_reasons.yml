@@ -1,0 +1,16 @@
+
+models:
+  - name: dim_sales_reasons
+    description: Tabela de dimensão de razões de venda (por exemplo, Promotion, Price, Quality)
+    columns:
+      - name: pk_salesreasonid
+        description: Chave primária de razões de venda
+        data_tests:
+          - unique
+          - not_null
+      - name: salesreason_name
+        description: Descrição da razão de venda
+        data_tests:
+          - not_null
+      - name: reasontype
+        description: Categoria da razão de venda (Marketing, Promotion ou Other)

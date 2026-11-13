@@ -26,3 +26,7 @@ models:
         description: Abreviação do país/região
       - name: stateprovince_name
         description: Descrição do estado/província
+      - name: countryregion_name
+        description: Descrição do país/região
+        data_tests:
+          - not_null

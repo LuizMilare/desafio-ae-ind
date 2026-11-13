@@ -1,0 +1,27 @@
+
+models:
+  - name: dim_customers
+    description: Tabela de dimensão de clientes. Cada cliente é uma loja revendedora (Store) ou uma pessoa física (Individual)
+    columns:
+      - name: pk_customerid
+        description: Chave primária de clientes
+        data_tests:
+          - unique
+          - not_null
+      - name: customer_type
+        description: Tipo do cliente. Store quando o cliente está ligado a uma loja, Individual caso contrário
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Store', 'Individual']
+      - name: customer_name
+        description: Nome do cliente. Nome da loja para clientes Store e nome completo para clientes Individual
+        data_tests:
+          - not_null
+      - name: firstname
+        description: Primeiro nome da pessoa ligada ao cliente
+      - name: lastname
+        description: Sobrenome da pessoa ligada ao cliente
+      - name: store_name
+        description: Nome da loja, preenchido apenas para clientes Store
