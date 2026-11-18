@@ -34,22 +34,25 @@ models:
         data_tests:
           - not_null
           - relationships:
-              to: ref('dim_addresses')
-              field: pk_addressid
+              arguments:
+                to: ref('dim_addresses')
+                field: pk_addressid
       - name: fk_shiptoaddressid
         description: Chave do endereço de envio (Tabela dim_address)
         data_tests:
           - not_null
           - relationships:
-              to: ref('dim_addresses')
-              field: pk_addressid
+              arguments:
+                to: ref('dim_addresses')
+                field: pk_addressid
       - name: fk_productid
         description: Chave de produto (Tabela dim_products)
         data_tests:
           - not_null
           - relationships:
-              to: ref('dim_products')
-              field: pk_productid
+              arguments:
+                to: ref('dim_products')
+                field: pk_productid
       - name: revisionnumber
         description: Número de revisão
       - name: orderdate

@@ -25,7 +25,13 @@ As definições das métricas e as decisões de modelagem estão em
 - Data warehouse: Databricks (catálogo `dev`)
 - Carga: dlt, para o schema `postgres_adventureworks`
 - Transformação: dbt (executado no dbt Cloud)
-- Visualização: dashboard sobre as tabelas da camada `marts`
+- Visualização: dashboard Databricks AI/BI sobre as tabelas da camada `marts`
+
+## Dashboard
+
+Dashboard publicado: [Adventure Works Sales](https://dbc-61d8a12f-9c38.cloud.databricks.com/dashboardsv3/01f1e2e694fb1db5a3fb7ee4571db86b/published).
+A definição está em `dashboard/` e a descrição dos visuais e dos cálculos em
+[docs/dashboard.md](docs/dashboard.md).
 
 ## Camadas
 
