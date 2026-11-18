@@ -1,8 +1,29 @@
 # desafio-ae-ind
 
-Projeto dbt do desafio de Analytics Engineering sobre o dataset AdventureWorks:
-transforma os dados brutos de vendas em um modelo dimensional (star schema) no
-Databricks, com documentação e testes, para alimentar um dashboard de vendas.
+Projeto do desafio de Analytics Engineering sobre o dataset AdventureWorks:
+carrega os dados de vendas do Postgres para o Databricks, transforma em um modelo
+dimensional (star schema) com dbt, documenta e testa o resultado e entrega um
+dashboard de vendas.
+
+O desafio pede que os números sejam confiáveis. O CEO citou um valor de
+referência da auditoria, as vendas brutas de 2011 (US$ 12.646.112,16), e esse
+valor é conferido por um teste automático a cada execução.
+
+## Visão geral do processo
+
+```
+Postgres (AdventureWorks)  →  dlt  →  Databricks (raw)  →  dbt  →  marts  →  dashboard AI/BI
+        origem                  EL      postgres_adventureworks    staging,    Adventure Works Sales
+                                                                   intermediate,
+                                                                   marts
+```
+
+| Etapa | O que acontece | Onde está |
+|---|---|---|
+| 1. Extração e carga (EL) | dlt copia as tabelas do Postgres para o schema `postgres_adventureworks` no Databricks | [src/Extract](src/Extract/README.md) |
+| 2. Transformação | dbt limpa, junta e modela os dados em três camadas | `models/` |
+| 3. Qualidade | testes nas fontes, nas chaves, nas relações e nas regras de negócio | `models/**/*.yml`, `tests/` |
+| 4. Visualização | dashboard Databricks AI/BI sobre as tabelas da camada `marts` | `dashboard/`, [docs/dashboard.md](docs/dashboard.md) |
 
 ## Perguntas de negócio
 
@@ -27,13 +48,22 @@ As definições das métricas e as decisões de modelagem estão em
 - Transformação: dbt (executado no dbt Cloud)
 - Visualização: dashboard Databricks AI/BI sobre as tabelas da camada `marts`
 
-## Dashboard
+## 1. Extração e carga
 
-Dashboard publicado: [Adventure Works Sales](https://dbc-61d8a12f-9c38.cloud.databricks.com/dashboardsv3/01f1e2e694fb1db5a3fb7ee4571db86b/published).
-A definição está em `dashboard/` e a descrição dos visuais e dos cálculos em
-[docs/dashboard.md](docs/dashboard.md).
+O dlt lê o banco AdventureWorks (Postgres) e grava as tabelas no Databricks, no
+schema `postgres_adventureworks`. O script é `src/Extract/el_script.py` e o passo
+a passo de configuração está em [src/Extract/README.md](src/Extract/README.md).
+As credenciais ficam em arquivos `.env` e `.dlt/secrets.toml`, que não são
+versionados.
 
-## Camadas
+O dbt lê essas tabelas como fontes, declaradas em
+`models/staging/_sources.yml`. São 14 tabelas de origem: vendas (cabeçalho, item
+e motivos), produtos (produto, subcategoria e categoria), clientes (cliente,
+pessoa e loja), endereços (endereço, estado e país) e cartão de crédito.
+
+<!-- print: docs/img/el-raw-tables.png (catálogo do Databricks com as tabelas brutas em postgres_adventureworks) -->
+
+## 2. Transformação com dbt
 
 ```
 models/
@@ -44,14 +74,18 @@ models/
 tests/            testes singulares de regras de negócio
 ```
 
-- **staging:** renomeia e tipa as colunas de cada tabela de origem. Não carrega
-  o número do cartão de crédito.
-- **intermediate:** junta as tabelas de origem e calcula as medidas.
-- **marts:** modelo dimensional final, materializado como tabela.
+| Camada | Modelos | O que faz |
+|---|---|---|
+| staging | 14 | Renomeia e tipa as colunas de cada tabela de origem. Não carrega o número do cartão de crédito. |
+| intermediate | 8 | Junta as tabelas de origem e calcula as medidas. |
+| marts | 8 | Modelo dimensional final, materializado como tabela. |
 
-## Modelo dimensional
+<!-- print: docs/img/dbt-lineage.png (gráfico de linhagem do dbt) -->
 
-`fact_sales` tem grão de item de pedido (`salesorderdetail`) e se liga a:
+### Modelo dimensional
+
+`fact_sales` tem grão de item de pedido (`salesorderdetail`, 121.317 linhas para
+31.465 pedidos) e se liga a:
 
 | Tabela | Descrição | Chave na fato |
 |---|---|---|
@@ -71,7 +105,51 @@ Medidas da fato: `salesorderdetailsubtotal` (vendas brutas),
 líquidas). Os valores `subtotal`, `taxamt`, `freight` e `totaldue` são do
 cabeçalho do pedido e se repetem em cada linha; não devem ser somados.
 
+![Modelo conceitual do data warehouse](docs/img/modelo-conceitual.png)
+
+O diagrama em PDF, com as tabelas de origem de cada dimensão, está em
+[docs/modelo_conceitual.pdf](docs/modelo_conceitual.pdf).
+
+## 3. Qualidade dos dados
+
+`dbt test` executa 79 testes, que cobrem:
+
+- chaves únicas e não nulas nas fontes e em todas as tabelas dos marts;
+- integridade referencial (`relationships`) entre a fato, as dimensões e a ponte;
+- valores aceitos (status do pedido, tipo de cliente);
+- regras de negócio em `tests/`, incluindo a validação das vendas brutas de 2011
+  (US$ 12.646.112,16), consistência entre vendas brutas, desconto e líquidas, e
+  consistência do `totaldue`.
+
+A lista completa e a justificativa de cada regra estão em
+[docs/regras_de_negocio.md](docs/regras_de_negocio.md).
+
+<!-- print: docs/img/dbt-test-sources.png e docs/img/dbt-test.png (testes passando) -->
+
+## 4. Dashboard
+
+Dashboard publicado: [Adventure Works Sales](https://dbc-61d8a12f-9c38.cloud.databricks.com/dashboardsv3/01f1e2e694fb1db5a3fb7ee4571db86b/published).
+O link abre sem login, porque o dashboard usa credenciais embutidas. Se o
+warehouse SQL estiver desligado, a primeira carga demora alguns segundos.
+
+| Página | O que mostra | Perguntas |
+|---|---|---|
+| Overview | KPIs, série mensal por canal, vendas por categoria e por ano | a, e |
+| Products and reasons | Valor médio por pedido, produtos mais vendidos, produto líder na promoção, motivos e cartões | a, b, f |
+| Customers and geography | Dez maiores clientes, cinco maiores cidades, países e estados | a, c, d |
+
+Dez filtros globais (ano, mês, canal, país, estado, cidade, categoria, tipo de
+cartão, status e motivo de venda) valem para todas as páginas. A definição do
+dashboard está em `dashboard/` e a descrição dos visuais e dos cálculos em
+[docs/dashboard.md](docs/dashboard.md).
+
+<!-- print: docs/img/dashboard-1.png, docs/img/dashboard-2.png e docs/img/dashboard-3.png (as três páginas do dashboard publicado) -->
+
 ## Como executar
+
+Pré-requisitos: um workspace Databricks com um SQL warehouse e o catálogo `dev`,
+as tabelas brutas já carregadas pelo dlt em `postgres_adventureworks` e um
+projeto dbt (dbt Cloud ou dbt Core) conectado ao warehouse e a este repositório.
 
 No dbt Cloud (ou em qualquer ambiente dbt com acesso ao Databricks):
 
@@ -84,16 +162,61 @@ dbt docs generate             # documentação e linhagem
 
 `dbt build` executa modelos e testes em ordem de dependência.
 
-## Testes
+## Demonstração
 
-Os testes cobrem:
+O vídeo mostra, nesta ordem:
 
-- chaves únicas e não nulas nas fontes e em todas as tabelas dos marts;
-- integridade referencial (`relationships`) entre a fato, as dimensões e a ponte;
-- valores aceitos (status do pedido, tipo de cliente);
-- regras de negócio em `tests/`, incluindo a validação das vendas brutas de 2011
-  (US$ 12.646.112,16), consistência entre vendas brutas, desconto e líquidas, e
-  consistência do `totaldue`.
+1. o objetivo do projeto e as dimensões ligadas à fato;
+2. `dbt run`, com todos os modelos executando;
+3. `dbt test --select source:*`, com os testes das fontes passando;
+4. `dbt test`, com todos os testes passando;
+5. a fato e os joins com as dimensões;
+6. o dashboard, com os filtros e as análises.
 
-A lista completa e a justificativa de cada regra estão em
-[docs/regras_de_negocio.md](docs/regras_de_negocio.md).
+<!-- vídeo: adicionar aqui o link público do vídeo -->
+
+### Consultas para conferir o resultado
+
+Rode no SQL editor do Databricks (ajuste o catálogo e o schema do seu ambiente).
+
+Vendas brutas de 2011, o valor de referência do CEO. O resultado esperado é
+`12646112.16`:
+
+```sql
+select round(sum(f.salesorderdetailsubtotal), 2) as vendas_brutas_2011
+from fact_sales as f
+inner join dim_dates as d on f.orderdate = d.pk_date
+where d.calendar_year = 2011
+```
+
+Pedidos, quantidade e vendas líquidas por ano e tipo de cliente, juntando a fato
+com duas dimensões:
+
+```sql
+select
+    d.calendar_year as ano,
+    c.customer_type as tipo_cliente,
+    count(distinct f.fk_salesorderid) as pedidos,
+    sum(f.orderqty) as quantidade,
+    round(sum(f.salesorderdetailnetsubtotal), 2) as vendas_liquidas
+from fact_sales as f
+inner join dim_dates as d on f.orderdate = d.pk_date
+inner join dim_customers as c on f.fk_customerid = c.pk_customerid
+group by d.calendar_year, c.customer_type
+order by d.calendar_year, c.customer_type
+```
+
+Os pedidos são contados com `count(distinct ...)` porque cada pedido tem vários
+itens na fato.
+
+## Mapa do repositório
+
+| Pasta ou arquivo | Conteúdo |
+|---|---|
+| `models/` | modelos dbt (staging, intermediate e marts) e a documentação dos marts |
+| `tests/` | testes singulares de regras de negócio |
+| `src/Extract/` | script e instruções da etapa de EL com dlt |
+| `dashboard/` | definição do dashboard AI/BI (JSON) |
+| `docs/regras_de_negocio.md` | definições das métricas e decisões de modelagem |
+| `docs/dashboard.md` | páginas, datasets e cálculos do dashboard |
+| `docs/modelo_conceitual.pdf` | diagrama conceitual do data warehouse |
