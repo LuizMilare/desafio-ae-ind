@@ -1,0 +1,6572 @@
+{
+ "datasets": [
+  {
+   "name": "filter_values",
+   "displayName": "Filter values",
+   "queryLines": [
+    "with sales as (\nselect f.fk_salesorderid as order_id, f.orderdate, date_trunc('month', f.orderdate) as order_month,\n    cast(year(f.orderdate) as string) as order_year, date_format(f.orderdate, 'MM - MMM') as month_label,\n    case when f.onlineorderflag then 'Online' else 'Reseller' end as channel,\n    cast(f.status as string) as order_status,\n    f.orderqty as units, f.salesorderdetailsubtotal as gross_sales, f.salesorderdetaildiscount as discount,\n    f.salesorderdetailnetsubtotal as net_sales,\n    p.product_name, coalesce(p.productcategory_name, 'Unknown') as category,\n    f.fk_customerid as customer_id, c.customer_name, c.customer_type,\n    a.city, a.stateprovince_name as state, a.countryregion_name as country,\n    coalesce(cc.cardtype, 'No card') as card_type\nfrom dev.dbt_lmilaremietto.fact_sales as f\nleft join dev.dbt_lmilaremietto.dim_products as p on f.fk_productid = p.pk_productid\nleft join dev.dbt_lmilaremietto.dim_customers as c on f.fk_customerid = c.pk_customerid\nleft join dev.dbt_lmilaremietto.dim_addresses as a on f.fk_shiptoaddressid = a.pk_addressid\nleft join dev.dbt_lmilaremietto.dim_credit_cards as cc on f.fk_creditcardid = cc.pk_creditcardid\n)\nselect distinct order_year, month_label, channel, country, state, city, category, card_type, order_status\nfrom sales"
+   ]
+  },
+  {
+   "name": "reason_values",
+   "displayName": "Sales reason values",
+   "queryLines": [
+    "select regexp_replace(salesreason_name, ' +', ' ') as sales_reason from dev.dbt_lmilaremietto.dim_sales_reasons"
+   ]
+  },
+  {
+   "name": "kpi",
+   "displayName": "Kpi",
+   "queryLines": [
+    "with sales as (\n",
+    "select f.fk_salesorderid as order_id, f.orderdate, date_trunc('month', f.orderdate) as order_month,\n",
+    "    cast(year(f.orderdate) as string) as order_year, date_format(f.orderdate, 'MM - MMM') as month_label,\n",
+    "    case when f.onlineorderflag then 'Online' else 'Reseller' end as channel,\n",
+    "    cast(f.status as string) as order_status,\n",
+    "    f.orderqty as units, f.salesorderdetailsubtotal as gross_sales, f.salesorderdetaildiscount as discount,\n",
+    "    f.salesorderdetailnetsubtotal as net_sales,\n",
+    "    p.product_name, coalesce(p.productcategory_name, 'Unknown') as category,\n",
+    "    f.fk_customerid as customer_id, c.customer_name, c.customer_type,\n",
+    "    a.city, a.stateprovince_name as state, a.countryregion_name as country,\n",
+    "    coalesce(cc.cardtype, 'No card') as card_type\n",
+    "from dev.dbt_lmilaremietto.fact_sales as f\n",
+    "left join dev.dbt_lmilaremietto.dim_products as p on f.fk_productid = p.pk_productid\n",
+    "left join dev.dbt_lmilaremietto.dim_customers as c on f.fk_customerid = c.pk_customerid\n",
+    "left join dev.dbt_lmilaremietto.dim_addresses as a on f.fk_shiptoaddressid = a.pk_addressid\n",
+    "left join dev.dbt_lmilaremietto.dim_credit_cards as cc on f.fk_creditcardid = cc.pk_creditcardid\n",
+    ")\n",
+    "select sum(net_sales) as net_sales, sum(gross_sales) as gross_sales, count(distinct order_id) as orders,\n",
+    "    sum(units) as units, sum(net_sales) / nullif(count(distinct order_id), 0) as avg_order_value,\n",
+    "    sum(discount) / nullif(sum(gross_sales), 0) as discount_rate\n",
+    "from sales\n",
+    "where (size(:p_year) = 0 or array_contains(:p_year, order_year))\n",
+    "  and (size(:p_month) = 0 or array_contains(:p_month, month_label))\n",
+    "  and (size(:p_channel) = 0 or array_contains(:p_channel, channel))\n",
+    "  and (size(:p_country) = 0 or array_contains(:p_country, country))\n",
+    "  and (size(:p_state) = 0 or array_contains(:p_state, state))\n",
+    "  and (size(:p_city) = 0 or array_contains(:p_city, city))\n",
+    "  and (size(:p_category) = 0 or array_contains(:p_category, category))\n",
+    "  and (size(:p_card) = 0 or array_contains(:p_card, card_type))\n",
+    "  and (size(:p_status) = 0 or array_contains(:p_status, order_status))\n",
+    "\n"
+   ],
+   "parameters": [
+    {
+     "displayName": "p_year",
+     "keyword": "p_year",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_month",
+     "keyword": "p_month",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_channel",
+     "keyword": "p_channel",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_country",
+     "keyword": "p_country",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_state",
+     "keyword": "p_state",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_city",
+     "keyword": "p_city",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_category",
+     "keyword": "p_category",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_card",
+     "keyword": "p_card",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_status",
+     "keyword": "p_status",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "monthly",
+   "displayName": "Monthly",
+   "queryLines": [
+    "with sales as (\n",
+    "select f.fk_salesorderid as order_id, f.orderdate, date_trunc('month', f.orderdate) as order_month,\n",
+    "    cast(year(f.orderdate) as string) as order_year, date_format(f.orderdate, 'MM - MMM') as month_label,\n",
+    "    case when f.onlineorderflag then 'Online' else 'Reseller' end as channel,\n",
+    "    cast(f.status as string) as order_status,\n",
+    "    f.orderqty as units, f.salesorderdetailsubtotal as gross_sales, f.salesorderdetaildiscount as discount,\n",
+    "    f.salesorderdetailnetsubtotal as net_sales,\n",
+    "    p.product_name, coalesce(p.productcategory_name, 'Unknown') as category,\n",
+    "    f.fk_customerid as customer_id, c.customer_name, c.customer_type,\n",
+    "    a.city, a.stateprovince_name as state, a.countryregion_name as country,\n",
+    "    coalesce(cc.cardtype, 'No card') as card_type\n",
+    "from dev.dbt_lmilaremietto.fact_sales as f\n",
+    "left join dev.dbt_lmilaremietto.dim_products as p on f.fk_productid = p.pk_productid\n",
+    "left join dev.dbt_lmilaremietto.dim_customers as c on f.fk_customerid = c.pk_customerid\n",
+    "left join dev.dbt_lmilaremietto.dim_addresses as a on f.fk_shiptoaddressid = a.pk_addressid\n",
+    "left join dev.dbt_lmilaremietto.dim_credit_cards as cc on f.fk_creditcardid = cc.pk_creditcardid\n",
+    ")\n",
+    "select order_month, channel, sum(net_sales) as net_sales, count(distinct order_id) as orders, sum(units) as units\n",
+    "from sales\n",
+    "where (size(:p_year) = 0 or array_contains(:p_year, order_year))\n",
+    "  and (size(:p_month) = 0 or array_contains(:p_month, month_label))\n",
+    "  and (size(:p_channel) = 0 or array_contains(:p_channel, channel))\n",
+    "  and (size(:p_country) = 0 or array_contains(:p_country, country))\n",
+    "  and (size(:p_state) = 0 or array_contains(:p_state, state))\n",
+    "  and (size(:p_city) = 0 or array_contains(:p_city, city))\n",
+    "  and (size(:p_category) = 0 or array_contains(:p_category, category))\n",
+    "  and (size(:p_card) = 0 or array_contains(:p_card, card_type))\n",
+    "  and (size(:p_status) = 0 or array_contains(:p_status, order_status))\n",
+    "group by order_month, channel\n",
+    "order by order_month, channel\n"
+   ],
+   "parameters": [
+    {
+     "displayName": "p_year",
+     "keyword": "p_year",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_month",
+     "keyword": "p_month",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_channel",
+     "keyword": "p_channel",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_country",
+     "keyword": "p_country",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_state",
+     "keyword": "p_state",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_city",
+     "keyword": "p_city",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_category",
+     "keyword": "p_category",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_card",
+     "keyword": "p_card",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_status",
+     "keyword": "p_status",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "yearly",
+   "displayName": "Yearly",
+   "queryLines": [
+    "with sales as (\n",
+    "select f.fk_salesorderid as order_id, f.orderdate, date_trunc('month', f.orderdate) as order_month,\n",
+    "    cast(year(f.orderdate) as string) as order_year, date_format(f.orderdate, 'MM - MMM') as month_label,\n",
+    "    case when f.onlineorderflag then 'Online' else 'Reseller' end as channel,\n",
+    "    cast(f.status as string) as order_status,\n",
+    "    f.orderqty as units, f.salesorderdetailsubtotal as gross_sales, f.salesorderdetaildiscount as discount,\n",
+    "    f.salesorderdetailnetsubtotal as net_sales,\n",
+    "    p.product_name, coalesce(p.productcategory_name, 'Unknown') as category,\n",
+    "    f.fk_customerid as customer_id, c.customer_name, c.customer_type,\n",
+    "    a.city, a.stateprovince_name as state, a.countryregion_name as country,\n",
+    "    coalesce(cc.cardtype, 'No card') as card_type\n",
+    "from dev.dbt_lmilaremietto.fact_sales as f\n",
+    "left join dev.dbt_lmilaremietto.dim_products as p on f.fk_productid = p.pk_productid\n",
+    "left join dev.dbt_lmilaremietto.dim_customers as c on f.fk_customerid = c.pk_customerid\n",
+    "left join dev.dbt_lmilaremietto.dim_addresses as a on f.fk_shiptoaddressid = a.pk_addressid\n",
+    "left join dev.dbt_lmilaremietto.dim_credit_cards as cc on f.fk_creditcardid = cc.pk_creditcardid\n",
+    ")\n",
+    "select order_year as year, count(distinct order_id) as orders, sum(units) as units, sum(net_sales) as net_sales\n",
+    "from sales\n",
+    "where (size(:p_year) = 0 or array_contains(:p_year, order_year))\n",
+    "  and (size(:p_month) = 0 or array_contains(:p_month, month_label))\n",
+    "  and (size(:p_channel) = 0 or array_contains(:p_channel, channel))\n",
+    "  and (size(:p_country) = 0 or array_contains(:p_country, country))\n",
+    "  and (size(:p_state) = 0 or array_contains(:p_state, state))\n",
+    "  and (size(:p_city) = 0 or array_contains(:p_city, city))\n",
+    "  and (size(:p_category) = 0 or array_contains(:p_category, category))\n",
+    "  and (size(:p_card) = 0 or array_contains(:p_card, card_type))\n",
+    "  and (size(:p_status) = 0 or array_contains(:p_status, order_status))\n",
+    "group by order_year\n",
+    "order by order_year\n"
+   ],
+   "parameters": [
+    {
+     "displayName": "p_year",
+     "keyword": "p_year",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_month",
+     "keyword": "p_month",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_channel",
+     "keyword": "p_channel",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_country",
+     "keyword": "p_country",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_state",
+     "keyword": "p_state",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_city",
+     "keyword": "p_city",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_category",
+     "keyword": "p_category",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_card",
+     "keyword": "p_card",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_status",
+     "keyword": "p_status",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "categories",
+   "displayName": "Categories",
+   "queryLines": [
+    "with sales as (\n",
+    "select f.fk_salesorderid as order_id, f.orderdate, date_trunc('month', f.orderdate) as order_month,\n",
+    "    cast(year(f.orderdate) as string) as order_year, date_format(f.orderdate, 'MM - MMM') as month_label,\n",
+    "    case when f.onlineorderflag then 'Online' else 'Reseller' end as channel,\n",
+    "    cast(f.status as string) as order_status,\n",
+    "    f.orderqty as units, f.salesorderdetailsubtotal as gross_sales, f.salesorderdetaildiscount as discount,\n",
+    "    f.salesorderdetailnetsubtotal as net_sales,\n",
+    "    p.product_name, coalesce(p.productcategory_name, 'Unknown') as category,\n",
+    "    f.fk_customerid as customer_id, c.customer_name, c.customer_type,\n",
+    "    a.city, a.stateprovince_name as state, a.countryregion_name as country,\n",
+    "    coalesce(cc.cardtype, 'No card') as card_type\n",
+    "from dev.dbt_lmilaremietto.fact_sales as f\n",
+    "left join dev.dbt_lmilaremietto.dim_products as p on f.fk_productid = p.pk_productid\n",
+    "left join dev.dbt_lmilaremietto.dim_customers as c on f.fk_customerid = c.pk_customerid\n",
+    "left join dev.dbt_lmilaremietto.dim_addresses as a on f.fk_shiptoaddressid = a.pk_addressid\n",
+    "left join dev.dbt_lmilaremietto.dim_credit_cards as cc on f.fk_creditcardid = cc.pk_creditcardid\n",
+    ")\n",
+    "select category, sum(net_sales) as net_sales, count(distinct order_id) as orders, sum(units) as units\n",
+    "from sales\n",
+    "where (size(:p_year) = 0 or array_contains(:p_year, order_year))\n",
+    "  and (size(:p_month) = 0 or array_contains(:p_month, month_label))\n",
+    "  and (size(:p_channel) = 0 or array_contains(:p_channel, channel))\n",
+    "  and (size(:p_country) = 0 or array_contains(:p_country, country))\n",
+    "  and (size(:p_state) = 0 or array_contains(:p_state, state))\n",
+    "  and (size(:p_city) = 0 or array_contains(:p_city, city))\n",
+    "  and (size(:p_category) = 0 or array_contains(:p_category, category))\n",
+    "  and (size(:p_card) = 0 or array_contains(:p_card, card_type))\n",
+    "  and (size(:p_status) = 0 or array_contains(:p_status, order_status))\n",
+    "group by category\n",
+    "order by net_sales desc\n"
+   ],
+   "parameters": [
+    {
+     "displayName": "p_year",
+     "keyword": "p_year",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_month",
+     "keyword": "p_month",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_channel",
+     "keyword": "p_channel",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_country",
+     "keyword": "p_country",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_state",
+     "keyword": "p_state",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_city",
+     "keyword": "p_city",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_category",
+     "keyword": "p_category",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_card",
+     "keyword": "p_card",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_status",
+     "keyword": "p_status",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "channels",
+   "displayName": "Channels",
+   "queryLines": [
+    "with sales as (\n",
+    "select f.fk_salesorderid as order_id, f.orderdate, date_trunc('month', f.orderdate) as order_month,\n",
+    "    cast(year(f.orderdate) as string) as order_year, date_format(f.orderdate, 'MM - MMM') as month_label,\n",
+    "    case when f.onlineorderflag then 'Online' else 'Reseller' end as channel,\n",
+    "    cast(f.status as string) as order_status,\n",
+    "    f.orderqty as units, f.salesorderdetailsubtotal as gross_sales, f.salesorderdetaildiscount as discount,\n",
+    "    f.salesorderdetailnetsubtotal as net_sales,\n",
+    "    p.product_name, coalesce(p.productcategory_name, 'Unknown') as category,\n",
+    "    f.fk_customerid as customer_id, c.customer_name, c.customer_type,\n",
+    "    a.city, a.stateprovince_name as state, a.countryregion_name as country,\n",
+    "    coalesce(cc.cardtype, 'No card') as card_type\n",
+    "from dev.dbt_lmilaremietto.fact_sales as f\n",
+    "left join dev.dbt_lmilaremietto.dim_products as p on f.fk_productid = p.pk_productid\n",
+    "left join dev.dbt_lmilaremietto.dim_customers as c on f.fk_customerid = c.pk_customerid\n",
+    "left join dev.dbt_lmilaremietto.dim_addresses as a on f.fk_shiptoaddressid = a.pk_addressid\n",
+    "left join dev.dbt_lmilaremietto.dim_credit_cards as cc on f.fk_creditcardid = cc.pk_creditcardid\n",
+    ")\n",
+    "select channel, count(distinct order_id) as orders, sum(net_sales) as net_sales\n",
+    "from sales\n",
+    "where (size(:p_year) = 0 or array_contains(:p_year, order_year))\n",
+    "  and (size(:p_month) = 0 or array_contains(:p_month, month_label))\n",
+    "  and (size(:p_channel) = 0 or array_contains(:p_channel, channel))\n",
+    "  and (size(:p_country) = 0 or array_contains(:p_country, country))\n",
+    "  and (size(:p_state) = 0 or array_contains(:p_state, state))\n",
+    "  and (size(:p_city) = 0 or array_contains(:p_city, city))\n",
+    "  and (size(:p_category) = 0 or array_contains(:p_category, category))\n",
+    "  and (size(:p_card) = 0 or array_contains(:p_card, card_type))\n",
+    "  and (size(:p_status) = 0 or array_contains(:p_status, order_status))\n",
+    "group by channel\n",
+    "order by channel\n"
+   ],
+   "parameters": [
+    {
+     "displayName": "p_year",
+     "keyword": "p_year",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_month",
+     "keyword": "p_month",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_channel",
+     "keyword": "p_channel",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_country",
+     "keyword": "p_country",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_state",
+     "keyword": "p_state",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_city",
+     "keyword": "p_city",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_category",
+     "keyword": "p_category",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_card",
+     "keyword": "p_card",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_status",
+     "keyword": "p_status",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "products_aov",
+   "displayName": "Products aov",
+   "queryLines": [
+    "with sales as (\n",
+    "select f.fk_salesorderid as order_id, f.orderdate, date_trunc('month', f.orderdate) as order_month,\n",
+    "    cast(year(f.orderdate) as string) as order_year, date_format(f.orderdate, 'MM - MMM') as month_label,\n",
+    "    case when f.onlineorderflag then 'Online' else 'Reseller' end as channel,\n",
+    "    cast(f.status as string) as order_status,\n",
+    "    f.orderqty as units, f.salesorderdetailsubtotal as gross_sales, f.salesorderdetaildiscount as discount,\n",
+    "    f.salesorderdetailnetsubtotal as net_sales,\n",
+    "    p.product_name, coalesce(p.productcategory_name, 'Unknown') as category,\n",
+    "    f.fk_customerid as customer_id, c.customer_name, c.customer_type,\n",
+    "    a.city, a.stateprovince_name as state, a.countryregion_name as country,\n",
+    "    coalesce(cc.cardtype, 'No card') as card_type\n",
+    "from dev.dbt_lmilaremietto.fact_sales as f\n",
+    "left join dev.dbt_lmilaremietto.dim_products as p on f.fk_productid = p.pk_productid\n",
+    "left join dev.dbt_lmilaremietto.dim_customers as c on f.fk_customerid = c.pk_customerid\n",
+    "left join dev.dbt_lmilaremietto.dim_addresses as a on f.fk_shiptoaddressid = a.pk_addressid\n",
+    "left join dev.dbt_lmilaremietto.dim_credit_cards as cc on f.fk_creditcardid = cc.pk_creditcardid\n",
+    ")\n",
+    "select product_name, count(distinct order_id) as orders,\n",
+    "    sum(net_sales) / count(distinct order_id) as avg_order_value\n",
+    "from sales\n",
+    "where (size(:p_year) = 0 or array_contains(:p_year, order_year))\n",
+    "  and (size(:p_month) = 0 or array_contains(:p_month, month_label))\n",
+    "  and (size(:p_channel) = 0 or array_contains(:p_channel, channel))\n",
+    "  and (size(:p_country) = 0 or array_contains(:p_country, country))\n",
+    "  and (size(:p_state) = 0 or array_contains(:p_state, state))\n",
+    "  and (size(:p_city) = 0 or array_contains(:p_city, city))\n",
+    "  and (size(:p_category) = 0 or array_contains(:p_category, category))\n",
+    "  and (size(:p_card) = 0 or array_contains(:p_card, card_type))\n",
+    "  and (size(:p_status) = 0 or array_contains(:p_status, order_status))\n",
+    "group by product_name\n",
+    "having count(distinct order_id) >= 30\n",
+    "order by avg_order_value desc\n",
+    "limit 10\n"
+   ],
+   "parameters": [
+    {
+     "displayName": "p_year",
+     "keyword": "p_year",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_month",
+     "keyword": "p_month",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_channel",
+     "keyword": "p_channel",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_country",
+     "keyword": "p_country",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_state",
+     "keyword": "p_state",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_city",
+     "keyword": "p_city",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_category",
+     "keyword": "p_category",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_card",
+     "keyword": "p_card",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_status",
+     "keyword": "p_status",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "products_top",
+   "displayName": "Products top",
+   "queryLines": [
+    "with sales as (\n",
+    "select f.fk_salesorderid as order_id, f.orderdate, date_trunc('month', f.orderdate) as order_month,\n",
+    "    cast(year(f.orderdate) as string) as order_year, date_format(f.orderdate, 'MM - MMM') as month_label,\n",
+    "    case when f.onlineorderflag then 'Online' else 'Reseller' end as channel,\n",
+    "    cast(f.status as string) as order_status,\n",
+    "    f.orderqty as units, f.salesorderdetailsubtotal as gross_sales, f.salesorderdetaildiscount as discount,\n",
+    "    f.salesorderdetailnetsubtotal as net_sales,\n",
+    "    p.product_name, coalesce(p.productcategory_name, 'Unknown') as category,\n",
+    "    f.fk_customerid as customer_id, c.customer_name, c.customer_type,\n",
+    "    a.city, a.stateprovince_name as state, a.countryregion_name as country,\n",
+    "    coalesce(cc.cardtype, 'No card') as card_type\n",
+    "from dev.dbt_lmilaremietto.fact_sales as f\n",
+    "left join dev.dbt_lmilaremietto.dim_products as p on f.fk_productid = p.pk_productid\n",
+    "left join dev.dbt_lmilaremietto.dim_customers as c on f.fk_customerid = c.pk_customerid\n",
+    "left join dev.dbt_lmilaremietto.dim_addresses as a on f.fk_shiptoaddressid = a.pk_addressid\n",
+    "left join dev.dbt_lmilaremietto.dim_credit_cards as cc on f.fk_creditcardid = cc.pk_creditcardid\n",
+    ")\n",
+    "select product_name, sum(units) as units, count(distinct order_id) as orders, sum(net_sales) as net_sales\n",
+    "from sales\n",
+    "where (size(:p_year) = 0 or array_contains(:p_year, order_year))\n",
+    "  and (size(:p_month) = 0 or array_contains(:p_month, month_label))\n",
+    "  and (size(:p_channel) = 0 or array_contains(:p_channel, channel))\n",
+    "  and (size(:p_country) = 0 or array_contains(:p_country, country))\n",
+    "  and (size(:p_state) = 0 or array_contains(:p_state, state))\n",
+    "  and (size(:p_city) = 0 or array_contains(:p_city, city))\n",
+    "  and (size(:p_category) = 0 or array_contains(:p_category, category))\n",
+    "  and (size(:p_card) = 0 or array_contains(:p_card, card_type))\n",
+    "  and (size(:p_status) = 0 or array_contains(:p_status, order_status))\n",
+    "group by product_name\n",
+    "order by net_sales desc\n",
+    "limit 10\n"
+   ],
+   "parameters": [
+    {
+     "displayName": "p_year",
+     "keyword": "p_year",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_month",
+     "keyword": "p_month",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_channel",
+     "keyword": "p_channel",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_country",
+     "keyword": "p_country",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_state",
+     "keyword": "p_state",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_city",
+     "keyword": "p_city",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_category",
+     "keyword": "p_category",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_card",
+     "keyword": "p_card",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_status",
+     "keyword": "p_status",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "customers_top",
+   "displayName": "Customers top",
+   "queryLines": [
+    "with sales as (\n",
+    "select f.fk_salesorderid as order_id, f.orderdate, date_trunc('month', f.orderdate) as order_month,\n",
+    "    cast(year(f.orderdate) as string) as order_year, date_format(f.orderdate, 'MM - MMM') as month_label,\n",
+    "    case when f.onlineorderflag then 'Online' else 'Reseller' end as channel,\n",
+    "    cast(f.status as string) as order_status,\n",
+    "    f.orderqty as units, f.salesorderdetailsubtotal as gross_sales, f.salesorderdetaildiscount as discount,\n",
+    "    f.salesorderdetailnetsubtotal as net_sales,\n",
+    "    p.product_name, coalesce(p.productcategory_name, 'Unknown') as category,\n",
+    "    f.fk_customerid as customer_id, c.customer_name, c.customer_type,\n",
+    "    a.city, a.stateprovince_name as state, a.countryregion_name as country,\n",
+    "    coalesce(cc.cardtype, 'No card') as card_type\n",
+    "from dev.dbt_lmilaremietto.fact_sales as f\n",
+    "left join dev.dbt_lmilaremietto.dim_products as p on f.fk_productid = p.pk_productid\n",
+    "left join dev.dbt_lmilaremietto.dim_customers as c on f.fk_customerid = c.pk_customerid\n",
+    "left join dev.dbt_lmilaremietto.dim_addresses as a on f.fk_shiptoaddressid = a.pk_addressid\n",
+    "left join dev.dbt_lmilaremietto.dim_credit_cards as cc on f.fk_creditcardid = cc.pk_creditcardid\n",
+    ")\n",
+    "select customer_name, customer_type, count(distinct order_id) as orders, sum(net_sales) as net_sales\n",
+    "from sales\n",
+    "where (size(:p_year) = 0 or array_contains(:p_year, order_year))\n",
+    "  and (size(:p_month) = 0 or array_contains(:p_month, month_label))\n",
+    "  and (size(:p_channel) = 0 or array_contains(:p_channel, channel))\n",
+    "  and (size(:p_country) = 0 or array_contains(:p_country, country))\n",
+    "  and (size(:p_state) = 0 or array_contains(:p_state, state))\n",
+    "  and (size(:p_city) = 0 or array_contains(:p_city, city))\n",
+    "  and (size(:p_category) = 0 or array_contains(:p_category, category))\n",
+    "  and (size(:p_card) = 0 or array_contains(:p_card, card_type))\n",
+    "  and (size(:p_status) = 0 or array_contains(:p_status, order_status))\n",
+    "group by customer_id, customer_name, customer_type\n",
+    "order by net_sales desc\n",
+    "limit 10\n"
+   ],
+   "parameters": [
+    {
+     "displayName": "p_year",
+     "keyword": "p_year",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_month",
+     "keyword": "p_month",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_channel",
+     "keyword": "p_channel",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_country",
+     "keyword": "p_country",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_state",
+     "keyword": "p_state",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_city",
+     "keyword": "p_city",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_category",
+     "keyword": "p_category",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_card",
+     "keyword": "p_card",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_status",
+     "keyword": "p_status",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "cities_top",
+   "displayName": "Cities top",
+   "queryLines": [
+    "with sales as (\n",
+    "select f.fk_salesorderid as order_id, f.orderdate, date_trunc('month', f.orderdate) as order_month,\n",
+    "    cast(year(f.orderdate) as string) as order_year, date_format(f.orderdate, 'MM - MMM') as month_label,\n",
+    "    case when f.onlineorderflag then 'Online' else 'Reseller' end as channel,\n",
+    "    cast(f.status as string) as order_status,\n",
+    "    f.orderqty as units, f.salesorderdetailsubtotal as gross_sales, f.salesorderdetaildiscount as discount,\n",
+    "    f.salesorderdetailnetsubtotal as net_sales,\n",
+    "    p.product_name, coalesce(p.productcategory_name, 'Unknown') as category,\n",
+    "    f.fk_customerid as customer_id, c.customer_name, c.customer_type,\n",
+    "    a.city, a.stateprovince_name as state, a.countryregion_name as country,\n",
+    "    coalesce(cc.cardtype, 'No card') as card_type\n",
+    "from dev.dbt_lmilaremietto.fact_sales as f\n",
+    "left join dev.dbt_lmilaremietto.dim_products as p on f.fk_productid = p.pk_productid\n",
+    "left join dev.dbt_lmilaremietto.dim_customers as c on f.fk_customerid = c.pk_customerid\n",
+    "left join dev.dbt_lmilaremietto.dim_addresses as a on f.fk_shiptoaddressid = a.pk_addressid\n",
+    "left join dev.dbt_lmilaremietto.dim_credit_cards as cc on f.fk_creditcardid = cc.pk_creditcardid\n",
+    ")\n",
+    "select concat(city, ' (', country, ')') as city_label, count(distinct order_id) as orders, sum(net_sales) as net_sales\n",
+    "from sales\n",
+    "where (size(:p_year) = 0 or array_contains(:p_year, order_year))\n",
+    "  and (size(:p_month) = 0 or array_contains(:p_month, month_label))\n",
+    "  and (size(:p_channel) = 0 or array_contains(:p_channel, channel))\n",
+    "  and (size(:p_country) = 0 or array_contains(:p_country, country))\n",
+    "  and (size(:p_state) = 0 or array_contains(:p_state, state))\n",
+    "  and (size(:p_city) = 0 or array_contains(:p_city, city))\n",
+    "  and (size(:p_category) = 0 or array_contains(:p_category, category))\n",
+    "  and (size(:p_card) = 0 or array_contains(:p_card, card_type))\n",
+    "  and (size(:p_status) = 0 or array_contains(:p_status, order_status))\n",
+    "group by city, country\n",
+    "order by net_sales desc\n",
+    "limit 5\n"
+   ],
+   "parameters": [
+    {
+     "displayName": "p_year",
+     "keyword": "p_year",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_month",
+     "keyword": "p_month",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_channel",
+     "keyword": "p_channel",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_country",
+     "keyword": "p_country",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_state",
+     "keyword": "p_state",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_city",
+     "keyword": "p_city",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_category",
+     "keyword": "p_category",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_card",
+     "keyword": "p_card",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_status",
+     "keyword": "p_status",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "countries",
+   "displayName": "Countries",
+   "queryLines": [
+    "with sales as (\n",
+    "select f.fk_salesorderid as order_id, f.orderdate, date_trunc('month', f.orderdate) as order_month,\n",
+    "    cast(year(f.orderdate) as string) as order_year, date_format(f.orderdate, 'MM - MMM') as month_label,\n",
+    "    case when f.onlineorderflag then 'Online' else 'Reseller' end as channel,\n",
+    "    cast(f.status as string) as order_status,\n",
+    "    f.orderqty as units, f.salesorderdetailsubtotal as gross_sales, f.salesorderdetaildiscount as discount,\n",
+    "    f.salesorderdetailnetsubtotal as net_sales,\n",
+    "    p.product_name, coalesce(p.productcategory_name, 'Unknown') as category,\n",
+    "    f.fk_customerid as customer_id, c.customer_name, c.customer_type,\n",
+    "    a.city, a.stateprovince_name as state, a.countryregion_name as country,\n",
+    "    coalesce(cc.cardtype, 'No card') as card_type\n",
+    "from dev.dbt_lmilaremietto.fact_sales as f\n",
+    "left join dev.dbt_lmilaremietto.dim_products as p on f.fk_productid = p.pk_productid\n",
+    "left join dev.dbt_lmilaremietto.dim_customers as c on f.fk_customerid = c.pk_customerid\n",
+    "left join dev.dbt_lmilaremietto.dim_addresses as a on f.fk_shiptoaddressid = a.pk_addressid\n",
+    "left join dev.dbt_lmilaremietto.dim_credit_cards as cc on f.fk_creditcardid = cc.pk_creditcardid\n",
+    ")\n",
+    "select country, count(distinct order_id) as orders, sum(net_sales) as net_sales\n",
+    "from sales\n",
+    "where (size(:p_year) = 0 or array_contains(:p_year, order_year))\n",
+    "  and (size(:p_month) = 0 or array_contains(:p_month, month_label))\n",
+    "  and (size(:p_channel) = 0 or array_contains(:p_channel, channel))\n",
+    "  and (size(:p_country) = 0 or array_contains(:p_country, country))\n",
+    "  and (size(:p_state) = 0 or array_contains(:p_state, state))\n",
+    "  and (size(:p_city) = 0 or array_contains(:p_city, city))\n",
+    "  and (size(:p_category) = 0 or array_contains(:p_category, category))\n",
+    "  and (size(:p_card) = 0 or array_contains(:p_card, card_type))\n",
+    "  and (size(:p_status) = 0 or array_contains(:p_status, order_status))\n",
+    "group by country\n",
+    "order by net_sales desc\n"
+   ],
+   "parameters": [
+    {
+     "displayName": "p_year",
+     "keyword": "p_year",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_month",
+     "keyword": "p_month",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_channel",
+     "keyword": "p_channel",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_country",
+     "keyword": "p_country",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_state",
+     "keyword": "p_state",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_city",
+     "keyword": "p_city",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_category",
+     "keyword": "p_category",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_card",
+     "keyword": "p_card",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_status",
+     "keyword": "p_status",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "states_top",
+   "displayName": "States top",
+   "queryLines": [
+    "with sales as (\n",
+    "select f.fk_salesorderid as order_id, f.orderdate, date_trunc('month', f.orderdate) as order_month,\n",
+    "    cast(year(f.orderdate) as string) as order_year, date_format(f.orderdate, 'MM - MMM') as month_label,\n",
+    "    case when f.onlineorderflag then 'Online' else 'Reseller' end as channel,\n",
+    "    cast(f.status as string) as order_status,\n",
+    "    f.orderqty as units, f.salesorderdetailsubtotal as gross_sales, f.salesorderdetaildiscount as discount,\n",
+    "    f.salesorderdetailnetsubtotal as net_sales,\n",
+    "    p.product_name, coalesce(p.productcategory_name, 'Unknown') as category,\n",
+    "    f.fk_customerid as customer_id, c.customer_name, c.customer_type,\n",
+    "    a.city, a.stateprovince_name as state, a.countryregion_name as country,\n",
+    "    coalesce(cc.cardtype, 'No card') as card_type\n",
+    "from dev.dbt_lmilaremietto.fact_sales as f\n",
+    "left join dev.dbt_lmilaremietto.dim_products as p on f.fk_productid = p.pk_productid\n",
+    "left join dev.dbt_lmilaremietto.dim_customers as c on f.fk_customerid = c.pk_customerid\n",
+    "left join dev.dbt_lmilaremietto.dim_addresses as a on f.fk_shiptoaddressid = a.pk_addressid\n",
+    "left join dev.dbt_lmilaremietto.dim_credit_cards as cc on f.fk_creditcardid = cc.pk_creditcardid\n",
+    ")\n",
+    "select state, country, count(distinct order_id) as orders, sum(net_sales) as net_sales\n",
+    "from sales\n",
+    "where (size(:p_year) = 0 or array_contains(:p_year, order_year))\n",
+    "  and (size(:p_month) = 0 or array_contains(:p_month, month_label))\n",
+    "  and (size(:p_channel) = 0 or array_contains(:p_channel, channel))\n",
+    "  and (size(:p_country) = 0 or array_contains(:p_country, country))\n",
+    "  and (size(:p_state) = 0 or array_contains(:p_state, state))\n",
+    "  and (size(:p_city) = 0 or array_contains(:p_city, city))\n",
+    "  and (size(:p_category) = 0 or array_contains(:p_category, category))\n",
+    "  and (size(:p_card) = 0 or array_contains(:p_card, card_type))\n",
+    "  and (size(:p_status) = 0 or array_contains(:p_status, order_status))\n",
+    "group by state, country\n",
+    "order by net_sales desc\n",
+    "limit 10\n"
+   ],
+   "parameters": [
+    {
+     "displayName": "p_year",
+     "keyword": "p_year",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_month",
+     "keyword": "p_month",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_channel",
+     "keyword": "p_channel",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_country",
+     "keyword": "p_country",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_state",
+     "keyword": "p_state",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_city",
+     "keyword": "p_city",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_category",
+     "keyword": "p_category",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_card",
+     "keyword": "p_card",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_status",
+     "keyword": "p_status",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "cards",
+   "displayName": "Cards",
+   "queryLines": [
+    "with sales as (\n",
+    "select f.fk_salesorderid as order_id, f.orderdate, date_trunc('month', f.orderdate) as order_month,\n",
+    "    cast(year(f.orderdate) as string) as order_year, date_format(f.orderdate, 'MM - MMM') as month_label,\n",
+    "    case when f.onlineorderflag then 'Online' else 'Reseller' end as channel,\n",
+    "    cast(f.status as string) as order_status,\n",
+    "    f.orderqty as units, f.salesorderdetailsubtotal as gross_sales, f.salesorderdetaildiscount as discount,\n",
+    "    f.salesorderdetailnetsubtotal as net_sales,\n",
+    "    p.product_name, coalesce(p.productcategory_name, 'Unknown') as category,\n",
+    "    f.fk_customerid as customer_id, c.customer_name, c.customer_type,\n",
+    "    a.city, a.stateprovince_name as state, a.countryregion_name as country,\n",
+    "    coalesce(cc.cardtype, 'No card') as card_type\n",
+    "from dev.dbt_lmilaremietto.fact_sales as f\n",
+    "left join dev.dbt_lmilaremietto.dim_products as p on f.fk_productid = p.pk_productid\n",
+    "left join dev.dbt_lmilaremietto.dim_customers as c on f.fk_customerid = c.pk_customerid\n",
+    "left join dev.dbt_lmilaremietto.dim_addresses as a on f.fk_shiptoaddressid = a.pk_addressid\n",
+    "left join dev.dbt_lmilaremietto.dim_credit_cards as cc on f.fk_creditcardid = cc.pk_creditcardid\n",
+    ")\n",
+    "select card_type, count(distinct order_id) as orders, sum(net_sales) as net_sales\n",
+    "from sales\n",
+    "where (size(:p_year) = 0 or array_contains(:p_year, order_year))\n",
+    "  and (size(:p_month) = 0 or array_contains(:p_month, month_label))\n",
+    "  and (size(:p_channel) = 0 or array_contains(:p_channel, channel))\n",
+    "  and (size(:p_country) = 0 or array_contains(:p_country, country))\n",
+    "  and (size(:p_state) = 0 or array_contains(:p_state, state))\n",
+    "  and (size(:p_city) = 0 or array_contains(:p_city, city))\n",
+    "  and (size(:p_category) = 0 or array_contains(:p_category, category))\n",
+    "  and (size(:p_card) = 0 or array_contains(:p_card, card_type))\n",
+    "  and (size(:p_status) = 0 or array_contains(:p_status, order_status))\n",
+    "group by card_type\n",
+    "order by net_sales desc\n"
+   ],
+   "parameters": [
+    {
+     "displayName": "p_year",
+     "keyword": "p_year",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_month",
+     "keyword": "p_month",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_channel",
+     "keyword": "p_channel",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_country",
+     "keyword": "p_country",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_state",
+     "keyword": "p_state",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_city",
+     "keyword": "p_city",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_category",
+     "keyword": "p_category",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_card",
+     "keyword": "p_card",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_status",
+     "keyword": "p_status",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "customer_stats",
+   "displayName": "Customer stats",
+   "queryLines": [
+    "with sales as (\n",
+    "select f.fk_salesorderid as order_id, f.orderdate, date_trunc('month', f.orderdate) as order_month,\n",
+    "    cast(year(f.orderdate) as string) as order_year, date_format(f.orderdate, 'MM - MMM') as month_label,\n",
+    "    case when f.onlineorderflag then 'Online' else 'Reseller' end as channel,\n",
+    "    cast(f.status as string) as order_status,\n",
+    "    f.orderqty as units, f.salesorderdetailsubtotal as gross_sales, f.salesorderdetaildiscount as discount,\n",
+    "    f.salesorderdetailnetsubtotal as net_sales,\n",
+    "    p.product_name, coalesce(p.productcategory_name, 'Unknown') as category,\n",
+    "    f.fk_customerid as customer_id, c.customer_name, c.customer_type,\n",
+    "    a.city, a.stateprovince_name as state, a.countryregion_name as country,\n",
+    "    coalesce(cc.cardtype, 'No card') as card_type\n",
+    "from dev.dbt_lmilaremietto.fact_sales as f\n",
+    "left join dev.dbt_lmilaremietto.dim_products as p on f.fk_productid = p.pk_productid\n",
+    "left join dev.dbt_lmilaremietto.dim_customers as c on f.fk_customerid = c.pk_customerid\n",
+    "left join dev.dbt_lmilaremietto.dim_addresses as a on f.fk_shiptoaddressid = a.pk_addressid\n",
+    "left join dev.dbt_lmilaremietto.dim_credit_cards as cc on f.fk_creditcardid = cc.pk_creditcardid\n",
+    ")\n",
+    "select count(*) as customers,\n",
+    "    sum(case when customer_type = 'Store' then 1 else 0 end) as resellers,\n",
+    "    sum(case when customer_type = 'Individual' then 1 else 0 end) as individuals,\n",
+    "    avg(case when orders = 1 then 1.0 else 0.0 end) as single_order_share\n",
+    "from (select customer_id, max(customer_type) as customer_type, count(distinct order_id) as orders\n",
+    "from sales\n",
+    "where (size(:p_year) = 0 or array_contains(:p_year, order_year))\n",
+    "  and (size(:p_month) = 0 or array_contains(:p_month, month_label))\n",
+    "  and (size(:p_channel) = 0 or array_contains(:p_channel, channel))\n",
+    "  and (size(:p_country) = 0 or array_contains(:p_country, country))\n",
+    "  and (size(:p_state) = 0 or array_contains(:p_state, state))\n",
+    "  and (size(:p_city) = 0 or array_contains(:p_city, city))\n",
+    "  and (size(:p_category) = 0 or array_contains(:p_category, category))\n",
+    "  and (size(:p_card) = 0 or array_contains(:p_card, card_type))\n",
+    "  and (size(:p_status) = 0 or array_contains(:p_status, order_status))\n",
+    "group by customer_id)\n"
+   ],
+   "parameters": [
+    {
+     "displayName": "p_year",
+     "keyword": "p_year",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_month",
+     "keyword": "p_month",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_channel",
+     "keyword": "p_channel",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_country",
+     "keyword": "p_country",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_state",
+     "keyword": "p_state",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_city",
+     "keyword": "p_city",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_category",
+     "keyword": "p_category",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_card",
+     "keyword": "p_card",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_status",
+     "keyword": "p_status",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "reasons",
+   "displayName": "Reasons",
+   "queryLines": [
+    "with sales as (\n",
+    "select f.fk_salesorderid as order_id, f.orderdate, date_trunc('month', f.orderdate) as order_month,\n",
+    "    cast(year(f.orderdate) as string) as order_year, date_format(f.orderdate, 'MM - MMM') as month_label,\n",
+    "    case when f.onlineorderflag then 'Online' else 'Reseller' end as channel,\n",
+    "    cast(f.status as string) as order_status,\n",
+    "    f.orderqty as units, f.salesorderdetailsubtotal as gross_sales, f.salesorderdetaildiscount as discount,\n",
+    "    f.salesorderdetailnetsubtotal as net_sales,\n",
+    "    p.product_name, coalesce(p.productcategory_name, 'Unknown') as category,\n",
+    "    f.fk_customerid as customer_id, c.customer_name, c.customer_type,\n",
+    "    a.city, a.stateprovince_name as state, a.countryregion_name as country,\n",
+    "    coalesce(cc.cardtype, 'No card') as card_type\n",
+    "from dev.dbt_lmilaremietto.fact_sales as f\n",
+    "left join dev.dbt_lmilaremietto.dim_products as p on f.fk_productid = p.pk_productid\n",
+    "left join dev.dbt_lmilaremietto.dim_customers as c on f.fk_customerid = c.pk_customerid\n",
+    "left join dev.dbt_lmilaremietto.dim_addresses as a on f.fk_shiptoaddressid = a.pk_addressid\n",
+    "left join dev.dbt_lmilaremietto.dim_credit_cards as cc on f.fk_creditcardid = cc.pk_creditcardid\n",
+    ")\n",
+    ", reasons as (\n",
+    "select s.*, regexp_replace(r.salesreason_name, ' +', ' ') as sales_reason, r.reasontype\n",
+    "from sales as s\n",
+    "join dev.dbt_lmilaremietto.bridge_sales_order_reasons as b on s.order_id = b.fk_salesorderid\n",
+    "join dev.dbt_lmilaremietto.dim_sales_reasons as r on b.fk_salesreasonid = r.pk_salesreasonid\n",
+    ")\n",
+    "select sales_reason, count(distinct order_id) as orders, sum(net_sales) as net_sales\n",
+    "from reasons\n",
+    "where (size(:p_year) = 0 or array_contains(:p_year, order_year))\n",
+    "  and (size(:p_month) = 0 or array_contains(:p_month, month_label))\n",
+    "  and (size(:p_channel) = 0 or array_contains(:p_channel, channel))\n",
+    "  and (size(:p_country) = 0 or array_contains(:p_country, country))\n",
+    "  and (size(:p_state) = 0 or array_contains(:p_state, state))\n",
+    "  and (size(:p_city) = 0 or array_contains(:p_city, city))\n",
+    "  and (size(:p_category) = 0 or array_contains(:p_category, category))\n",
+    "  and (size(:p_card) = 0 or array_contains(:p_card, card_type))\n",
+    "  and (size(:p_status) = 0 or array_contains(:p_status, order_status))\n",
+    "  and (size(:p_reason) = 0 or array_contains(:p_reason, sales_reason))\n",
+    "group by sales_reason\n",
+    "order by orders desc\n"
+   ],
+   "parameters": [
+    {
+     "displayName": "p_year",
+     "keyword": "p_year",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_month",
+     "keyword": "p_month",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_channel",
+     "keyword": "p_channel",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_country",
+     "keyword": "p_country",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_state",
+     "keyword": "p_state",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_city",
+     "keyword": "p_city",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_category",
+     "keyword": "p_category",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_card",
+     "keyword": "p_card",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_status",
+     "keyword": "p_status",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_reason",
+     "keyword": "p_reason",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "promo_products",
+   "displayName": "Promo products",
+   "queryLines": [
+    "with sales as (\n",
+    "select f.fk_salesorderid as order_id, f.orderdate, date_trunc('month', f.orderdate) as order_month,\n",
+    "    cast(year(f.orderdate) as string) as order_year, date_format(f.orderdate, 'MM - MMM') as month_label,\n",
+    "    case when f.onlineorderflag then 'Online' else 'Reseller' end as channel,\n",
+    "    cast(f.status as string) as order_status,\n",
+    "    f.orderqty as units, f.salesorderdetailsubtotal as gross_sales, f.salesorderdetaildiscount as discount,\n",
+    "    f.salesorderdetailnetsubtotal as net_sales,\n",
+    "    p.product_name, coalesce(p.productcategory_name, 'Unknown') as category,\n",
+    "    f.fk_customerid as customer_id, c.customer_name, c.customer_type,\n",
+    "    a.city, a.stateprovince_name as state, a.countryregion_name as country,\n",
+    "    coalesce(cc.cardtype, 'No card') as card_type\n",
+    "from dev.dbt_lmilaremietto.fact_sales as f\n",
+    "left join dev.dbt_lmilaremietto.dim_products as p on f.fk_productid = p.pk_productid\n",
+    "left join dev.dbt_lmilaremietto.dim_customers as c on f.fk_customerid = c.pk_customerid\n",
+    "left join dev.dbt_lmilaremietto.dim_addresses as a on f.fk_shiptoaddressid = a.pk_addressid\n",
+    "left join dev.dbt_lmilaremietto.dim_credit_cards as cc on f.fk_creditcardid = cc.pk_creditcardid\n",
+    ")\n",
+    ", reasons as (\n",
+    "select s.*, regexp_replace(r.salesreason_name, ' +', ' ') as sales_reason, r.reasontype\n",
+    "from sales as s\n",
+    "join dev.dbt_lmilaremietto.bridge_sales_order_reasons as b on s.order_id = b.fk_salesorderid\n",
+    "join dev.dbt_lmilaremietto.dim_sales_reasons as r on b.fk_salesreasonid = r.pk_salesreasonid\n",
+    ")\n",
+    "select product_name, sum(units) as units, count(distinct order_id) as orders\n",
+    "from reasons\n",
+    "where (size(:p_year) = 0 or array_contains(:p_year, order_year))\n",
+    "  and (size(:p_month) = 0 or array_contains(:p_month, month_label))\n",
+    "  and (size(:p_channel) = 0 or array_contains(:p_channel, channel))\n",
+    "  and (size(:p_country) = 0 or array_contains(:p_country, country))\n",
+    "  and (size(:p_state) = 0 or array_contains(:p_state, state))\n",
+    "  and (size(:p_city) = 0 or array_contains(:p_city, city))\n",
+    "  and (size(:p_category) = 0 or array_contains(:p_category, category))\n",
+    "  and (size(:p_card) = 0 or array_contains(:p_card, card_type))\n",
+    "  and (size(:p_status) = 0 or array_contains(:p_status, order_status))\n",
+    "  and (size(:p_reason) = 0 or array_contains(:p_reason, sales_reason))\n",
+    "  and reasontype = 'Promotion'\n",
+    "group by product_name\n",
+    "order by units desc\n",
+    "limit 5\n"
+   ],
+   "parameters": [
+    {
+     "displayName": "p_year",
+     "keyword": "p_year",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_month",
+     "keyword": "p_month",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_channel",
+     "keyword": "p_channel",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_country",
+     "keyword": "p_country",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_state",
+     "keyword": "p_state",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_city",
+     "keyword": "p_city",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_category",
+     "keyword": "p_category",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_card",
+     "keyword": "p_card",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_status",
+     "keyword": "p_status",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    },
+    {
+     "displayName": "p_reason",
+     "keyword": "p_reason",
+     "dataType": "STRING",
+     "complexType": "MULTI",
+     "defaultSelection": {
+      "values": {
+       "dataType": "STRING",
+       "values": []
+      }
+     }
+    }
+   ]
+  }
+ ],
+ "pages": [
+  {
+   "name": "page_overview",
+   "displayName": "Overview",
+   "layout": [
+    {
+     "widget": {
+      "name": "t_overview",
+      "multilineTextboxSpec": {
+       "lines": [
+        "## Sales overview\n",
+        "Net sales = gross sales minus discounts. Use the filters on the left; they apply to every page."
+       ]
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 0,
+      "width": 6,
+      "height": 2
+     }
+    },
+    {
+     "widget": {
+      "name": "c_net",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "kpi",
+         "fields": [
+          {
+           "name": "net_sales",
+           "expression": "`net_sales`"
+          }
+         ],
+         "disaggregated": true
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "widgetType": "counter",
+       "encodings": {
+        "value": {
+         "fieldName": "net_sales",
+         "displayName": "Net sales",
+         "format": {
+          "type": "number-currency",
+          "currencyCode": "USD",
+          "abbreviation": "compact",
+          "decimalPlaces": {
+           "type": "max",
+           "places": 1
+          }
+         }
+        }
+       },
+       "frame": {
+        "showTitle": true,
+        "title": "Net sales"
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 2,
+      "width": 2,
+      "height": 3
+     }
+    },
+    {
+     "widget": {
+      "name": "c_gross",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "kpi",
+         "fields": [
+          {
+           "name": "gross_sales",
+           "expression": "`gross_sales`"
+          }
+         ],
+         "disaggregated": true
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "widgetType": "counter",
+       "encodings": {
+        "value": {
+         "fieldName": "gross_sales",
+         "displayName": "Gross sales",
+         "format": {
+          "type": "number-currency",
+          "currencyCode": "USD",
+          "abbreviation": "compact",
+          "decimalPlaces": {
+           "type": "max",
+           "places": 1
+          }
+         }
+        }
+       },
+       "frame": {
+        "showTitle": true,
+        "title": "Gross sales"
+       }
+      }
+     },
+     "position": {
+      "x": 2,
+      "y": 2,
+      "width": 2,
+      "height": 3
+     }
+    },
+    {
+     "widget": {
+      "name": "c_orders",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "kpi",
+         "fields": [
+          {
+           "name": "orders",
+           "expression": "`orders`"
+          }
+         ],
+         "disaggregated": true
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "widgetType": "counter",
+       "encodings": {
+        "value": {
+         "fieldName": "orders",
+         "displayName": "Orders",
+         "format": {
+          "type": "number-plain",
+          "abbreviation": "none",
+          "decimalPlaces": {
+           "type": "max",
+           "places": 0
+          }
+         }
+        }
+       },
+       "frame": {
+        "showTitle": true,
+        "title": "Orders"
+       }
+      }
+     },
+     "position": {
+      "x": 4,
+      "y": 2,
+      "width": 2,
+      "height": 3
+     }
+    },
+    {
+     "widget": {
+      "name": "c_units",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "kpi",
+         "fields": [
+          {
+           "name": "units",
+           "expression": "`units`"
+          }
+         ],
+         "disaggregated": true
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "widgetType": "counter",
+       "encodings": {
+        "value": {
+         "fieldName": "units",
+         "displayName": "Units sold",
+         "format": {
+          "type": "number-plain",
+          "abbreviation": "none",
+          "decimalPlaces": {
+           "type": "max",
+           "places": 0
+          }
+         }
+        }
+       },
+       "frame": {
+        "showTitle": true,
+        "title": "Units sold"
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 5,
+      "width": 2,
+      "height": 3
+     }
+    },
+    {
+     "widget": {
+      "name": "c_aov",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "kpi",
+         "fields": [
+          {
+           "name": "avg_order_value",
+           "expression": "`avg_order_value`"
+          }
+         ],
+         "disaggregated": true
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "widgetType": "counter",
+       "encodings": {
+        "value": {
+         "fieldName": "avg_order_value",
+         "displayName": "Average order value",
+         "format": {
+          "type": "number-currency",
+          "currencyCode": "USD",
+          "decimalPlaces": {
+           "type": "max",
+           "places": 0
+          }
+         }
+        }
+       },
+       "frame": {
+        "showTitle": true,
+        "title": "Average order value"
+       }
+      }
+     },
+     "position": {
+      "x": 2,
+      "y": 5,
+      "width": 2,
+      "height": 3
+     }
+    },
+    {
+     "widget": {
+      "name": "c_disc",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "kpi",
+         "fields": [
+          {
+           "name": "discount_rate",
+           "expression": "`discount_rate`"
+          }
+         ],
+         "disaggregated": true
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "widgetType": "counter",
+       "encodings": {
+        "value": {
+         "fieldName": "discount_rate",
+         "displayName": "Discount rate",
+         "format": {
+          "type": "number-percent",
+          "decimalPlaces": {
+           "type": "max",
+           "places": 2
+          }
+         }
+        }
+       },
+       "frame": {
+        "showTitle": true,
+        "title": "Discount rate"
+       }
+      }
+     },
+     "position": {
+      "x": 4,
+      "y": 5,
+      "width": 2,
+      "height": 3
+     }
+    },
+    {
+     "widget": {
+      "name": "b_net_month",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "monthly",
+         "fields": [
+          {
+           "name": "order_month",
+           "expression": "`order_month`"
+          },
+          {
+           "name": "net_sales",
+           "expression": "`net_sales`"
+          },
+          {
+           "name": "channel",
+           "expression": "`channel`"
+          }
+         ],
+         "disaggregated": true
+        }
+       }
+      ],
+      "spec": {
+       "version": 3,
+       "widgetType": "bar",
+       "encodings": {
+        "x": {
+         "fieldName": "order_month",
+         "scale": {
+          "type": "temporal"
+         },
+         "displayName": "Month"
+        },
+        "y": {
+         "fieldName": "net_sales",
+         "scale": {
+          "type": "quantitative"
+         },
+         "displayName": "Net sales"
+        },
+        "color": {
+         "fieldName": "channel",
+         "scale": {
+          "type": "categorical",
+          "mappings": [
+           {
+            "value": "Online",
+            "color": "#2a78d6"
+           },
+           {
+            "value": "Reseller",
+            "color": "#eb6834"
+           }
+          ]
+         },
+         "displayName": "Channel"
+        }
+       },
+       "frame": {
+        "showTitle": true,
+        "title": "Net sales by month (question e)"
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 8,
+      "width": 6,
+      "height": 6
+     }
+    },
+    {
+     "widget": {
+      "name": "b_orders_month",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "monthly",
+         "fields": [
+          {
+           "name": "order_month",
+           "expression": "`order_month`"
+          },
+          {
+           "name": "orders",
+           "expression": "`orders`"
+          },
+          {
+           "name": "channel",
+           "expression": "`channel`"
+          }
+         ],
+         "disaggregated": true
+        }
+       }
+      ],
+      "spec": {
+       "version": 3,
+       "widgetType": "bar",
+       "encodings": {
+        "x": {
+         "fieldName": "order_month",
+         "scale": {
+          "type": "temporal"
+         },
+         "displayName": "Month"
+        },
+        "y": {
+         "fieldName": "orders",
+         "scale": {
+          "type": "quantitative"
+         },
+         "displayName": "Orders"
+        },
+        "color": {
+         "fieldName": "channel",
+         "scale": {
+          "type": "categorical",
+          "mappings": [
+           {
+            "value": "Online",
+            "color": "#2a78d6"
+           },
+           {
+            "value": "Reseller",
+            "color": "#eb6834"
+           }
+          ]
+         },
+         "displayName": "Channel"
+        }
+       },
+       "frame": {
+        "showTitle": true,
+        "title": "Orders by month"
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 14,
+      "width": 3,
+      "height": 5
+     }
+    },
+    {
+     "widget": {
+      "name": "b_units_month",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "monthly",
+         "fields": [
+          {
+           "name": "order_month",
+           "expression": "`order_month`"
+          },
+          {
+           "name": "units",
+           "expression": "`units`"
+          },
+          {
+           "name": "channel",
+           "expression": "`channel`"
+          }
+         ],
+         "disaggregated": true
+        }
+       }
+      ],
+      "spec": {
+       "version": 3,
+       "widgetType": "bar",
+       "encodings": {
+        "x": {
+         "fieldName": "order_month",
+         "scale": {
+          "type": "temporal"
+         },
+         "displayName": "Month"
+        },
+        "y": {
+         "fieldName": "units",
+         "scale": {
+          "type": "quantitative"
+         },
+         "displayName": "Units"
+        },
+        "color": {
+         "fieldName": "channel",
+         "scale": {
+          "type": "categorical",
+          "mappings": [
+           {
+            "value": "Online",
+            "color": "#2a78d6"
+           },
+           {
+            "value": "Reseller",
+            "color": "#eb6834"
+           }
+          ]
+         },
+         "displayName": "Channel"
+        }
+       },
+       "frame": {
+        "showTitle": true,
+        "title": "Units by month"
+       }
+      }
+     },
+     "position": {
+      "x": 3,
+      "y": 14,
+      "width": 3,
+      "height": 5
+     }
+    },
+    {
+     "widget": {
+      "name": "b_category",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "categories",
+         "fields": [
+          {
+           "name": "category",
+           "expression": "`category`"
+          },
+          {
+           "name": "net_sales",
+           "expression": "`net_sales`"
+          }
+         ],
+         "disaggregated": true
+        }
+       }
+      ],
+      "spec": {
+       "version": 3,
+       "widgetType": "bar",
+       "encodings": {
+        "y": {
+         "fieldName": "category",
+         "scale": {
+          "type": "categorical"
+         },
+         "displayName": "Category"
+        },
+        "x": {
+         "fieldName": "net_sales",
+         "scale": {
+          "type": "quantitative"
+         },
+         "displayName": "Net sales"
+        }
+       },
+       "frame": {
+        "showTitle": true,
+        "title": "Net sales by product category"
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 19,
+      "width": 3,
+      "height": 5
+     }
+    },
+    {
+     "widget": {
+      "name": "p_net_channel",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "channels",
+         "fields": [
+          {
+           "name": "channel",
+           "expression": "`channel`"
+          },
+          {
+           "name": "net_sales",
+           "expression": "`net_sales`"
+          }
+         ],
+         "disaggregated": true
+        }
+       }
+      ],
+      "spec": {
+       "version": 3,
+       "widgetType": "pie",
+       "encodings": {
+        "angle": {
+         "fieldName": "net_sales",
+         "scale": {
+          "type": "quantitative"
+         },
+         "displayName": "net_sales"
+        },
+        "color": {
+         "fieldName": "channel",
+         "scale": {
+          "type": "categorical",
+          "mappings": [
+           {
+            "value": "Online",
+            "color": "#2a78d6"
+           },
+           {
+            "value": "Reseller",
+            "color": "#eb6834"
+           }
+          ]
+         },
+         "displayName": "channel"
+        }
+       },
+       "frame": {
+        "showTitle": true,
+        "title": "Net sales by channel"
+       }
+      }
+     },
+     "position": {
+      "x": 3,
+      "y": 19,
+      "width": 3,
+      "height": 5
+     }
+    },
+    {
+     "widget": {
+      "name": "t_yearly",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "yearly",
+         "fields": [
+          {
+           "name": "year",
+           "expression": "`year`"
+          },
+          {
+           "name": "orders",
+           "expression": "`orders`"
+          },
+          {
+           "name": "units",
+           "expression": "`units`"
+          },
+          {
+           "name": "net_sales",
+           "expression": "`net_sales`"
+          }
+         ],
+         "disaggregated": true
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "widgetType": "table",
+       "encodings": {
+        "columns": [
+         {
+          "fieldName": "year",
+          "displayName": "Year"
+         },
+         {
+          "fieldName": "orders",
+          "displayName": "Orders"
+         },
+         {
+          "fieldName": "units",
+          "displayName": "Units"
+         },
+         {
+          "fieldName": "net_sales",
+          "displayName": "Net sales"
+         }
+        ]
+       },
+       "itemsPerPage": 10,
+       "frame": {
+        "showTitle": true,
+        "title": "Orders, units and net sales by year"
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 24,
+      "width": 3,
+      "height": 5
+     }
+    },
+    {
+     "widget": {
+      "name": "p_orders_channel",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "channels",
+         "fields": [
+          {
+           "name": "channel",
+           "expression": "`channel`"
+          },
+          {
+           "name": "orders",
+           "expression": "`orders`"
+          }
+         ],
+         "disaggregated": true
+        }
+       }
+      ],
+      "spec": {
+       "version": 3,
+       "widgetType": "pie",
+       "encodings": {
+        "angle": {
+         "fieldName": "orders",
+         "scale": {
+          "type": "quantitative"
+         },
+         "displayName": "orders"
+        },
+        "color": {
+         "fieldName": "channel",
+         "scale": {
+          "type": "categorical",
+          "mappings": [
+           {
+            "value": "Online",
+            "color": "#2a78d6"
+           },
+           {
+            "value": "Reseller",
+            "color": "#eb6834"
+           }
+          ]
+         },
+         "displayName": "channel"
+        }
+       },
+       "frame": {
+        "showTitle": true,
+        "title": "Orders by channel"
+       }
+      }
+     },
+     "position": {
+      "x": 3,
+      "y": 24,
+      "width": 3,
+      "height": 5
+     }
+    },
+    {
+     "widget": {
+      "name": "t_notes1",
+      "multilineTextboxSpec": {
+       "lines": [
+        "**Data notes:** orders cover 2011-05-31 to 2014-06-30. 2011 and 2014 are partial years and June 2014 is incomplete (no bike sales). ",
+        "Every order has the same status, so the status filter does not split the data."
+       ]
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 29,
+      "width": 6,
+      "height": 2
+     }
+    }
+   ],
+   "pageType": "PAGE_TYPE_CANVAS"
+  },
+  {
+   "name": "page_products",
+   "displayName": "Products and reasons",
+   "layout": [
+    {
+     "widget": {
+      "name": "t_products",
+      "multilineTextboxSpec": {
+       "lines": [
+        "## Products and sales reasons\n",
+        "Average order value = net sales / orders. Sales reasons exist only for online orders."
+       ]
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 0,
+      "width": 6,
+      "height": 2
+     }
+    },
+    {
+     "widget": {
+      "name": "b_aov",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "products_aov",
+         "fields": [
+          {
+           "name": "product_name",
+           "expression": "`product_name`"
+          },
+          {
+           "name": "avg_order_value",
+           "expression": "`avg_order_value`"
+          }
+         ],
+         "disaggregated": true
+        }
+       }
+      ],
+      "spec": {
+       "version": 3,
+       "widgetType": "bar",
+       "encodings": {
+        "y": {
+         "fieldName": "product_name",
+         "scale": {
+          "type": "categorical"
+         },
+         "displayName": "Product"
+        },
+        "x": {
+         "fieldName": "avg_order_value",
+         "scale": {
+          "type": "quantitative"
+         },
+         "displayName": "Average order value"
+        }
+       },
+       "frame": {
+        "showTitle": true,
+        "title": "Top 10 products by average order value, products with 30+ orders (question b)"
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 2,
+      "width": 6,
+      "height": 7
+     }
+    },
+    {
+     "widget": {
+      "name": "t_top_products",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "products_top",
+         "fields": [
+          {
+           "name": "product_name",
+           "expression": "`product_name`"
+          },
+          {
+           "name": "units",
+           "expression": "`units`"
+          },
+          {
+           "name": "orders",
+           "expression": "`orders`"
+          },
+          {
+           "name": "net_sales",
+           "expression": "`net_sales`"
+          }
+         ],
+         "disaggregated": true
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "widgetType": "table",
+       "encodings": {
+        "columns": [
+         {
+          "fieldName": "product_name",
+          "displayName": "Product"
+         },
+         {
+          "fieldName": "units",
+          "displayName": "Units"
+         },
+         {
+          "fieldName": "orders",
+          "displayName": "Orders"
+         },
+         {
+          "fieldName": "net_sales",
+          "displayName": "Net sales"
+         }
+        ]
+       },
+       "itemsPerPage": 10,
+       "frame": {
+        "showTitle": true,
+        "title": "Top 10 products by net sales"
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 9,
+      "width": 3,
+      "height": 6
+     }
+    },
+    {
+     "widget": {
+      "name": "b_promo",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "promo_products",
+         "fields": [
+          {
+           "name": "product_name",
+           "expression": "`product_name`"
+          },
+          {
+           "name": "units",
+           "expression": "`units`"
+          }
+         ],
+         "disaggregated": true
+        }
+       }
+      ],
+      "spec": {
+       "version": 3,
+       "widgetType": "bar",
+       "encodings": {
+        "y": {
+         "fieldName": "product_name",
+         "scale": {
+          "type": "categorical"
+         },
+         "displayName": "Product"
+        },
+        "x": {
+         "fieldName": "units",
+         "scale": {
+          "type": "quantitative"
+         },
+         "displayName": "Units"
+        }
+       },
+       "frame": {
+        "showTitle": true,
+        "title": "Top 5 products by units under the \"Promotion\" reason (question f)"
+       }
+      }
+     },
+     "position": {
+      "x": 3,
+      "y": 9,
+      "width": 3,
+      "height": 6
+     }
+    },
+    {
+     "widget": {
+      "name": "b_reasons",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "reasons",
+         "fields": [
+          {
+           "name": "sales_reason",
+           "expression": "`sales_reason`"
+          },
+          {
+           "name": "orders",
+           "expression": "`orders`"
+          }
+         ],
+         "disaggregated": true
+        }
+       }
+      ],
+      "spec": {
+       "version": 3,
+       "widgetType": "bar",
+       "encodings": {
+        "y": {
+         "fieldName": "sales_reason",
+         "scale": {
+          "type": "categorical"
+         },
+         "displayName": "Sales reason"
+        },
+        "x": {
+         "fieldName": "orders",
+         "scale": {
+          "type": "quantitative"
+         },
+         "displayName": "Orders"
+        }
+       },
+       "frame": {
+        "showTitle": true,
+        "title": "Online orders by sales reason (orders can count under several reasons)"
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 15,
+      "width": 3,
+      "height": 5
+     }
+    },
+    {
+     "widget": {
+      "name": "b_cards",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "cards",
+         "fields": [
+          {
+           "name": "card_type",
+           "expression": "`card_type`"
+          },
+          {
+           "name": "net_sales",
+           "expression": "`net_sales`"
+          }
+         ],
+         "disaggregated": true
+        }
+       }
+      ],
+      "spec": {
+       "version": 3,
+       "widgetType": "bar",
+       "encodings": {
+        "y": {
+         "fieldName": "card_type",
+         "scale": {
+          "type": "categorical"
+         },
+         "displayName": "Card type"
+        },
+        "x": {
+         "fieldName": "net_sales",
+         "scale": {
+          "type": "quantitative"
+         },
+         "displayName": "Net sales"
+        }
+       },
+       "frame": {
+        "showTitle": true,
+        "title": "Net sales by card type"
+       }
+      }
+     },
+     "position": {
+      "x": 3,
+      "y": 15,
+      "width": 3,
+      "height": 5
+     }
+    }
+   ],
+   "pageType": "PAGE_TYPE_CANVAS"
+  },
+  {
+   "name": "page_customers",
+   "displayName": "Customers and geography",
+   "layout": [
+    {
+     "widget": {
+      "name": "t_customers",
+      "multilineTextboxSpec": {
+       "lines": [
+        "## Customers and geography\n",
+        "City, state and country use the ship-to address."
+       ]
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 0,
+      "width": 6,
+      "height": 2
+     }
+    },
+    {
+     "widget": {
+      "name": "c_customers",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "customer_stats",
+         "fields": [
+          {
+           "name": "customers",
+           "expression": "`customers`"
+          }
+         ],
+         "disaggregated": true
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "widgetType": "counter",
+       "encodings": {
+        "value": {
+         "fieldName": "customers",
+         "displayName": "Customers",
+         "format": {
+          "type": "number-plain",
+          "abbreviation": "none",
+          "decimalPlaces": {
+           "type": "max",
+           "places": 0
+          }
+         }
+        }
+       },
+       "frame": {
+        "showTitle": true,
+        "title": "Customers"
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 2,
+      "width": 2,
+      "height": 3
+     }
+    },
+    {
+     "widget": {
+      "name": "c_resellers",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "customer_stats",
+         "fields": [
+          {
+           "name": "resellers",
+           "expression": "`resellers`"
+          }
+         ],
+         "disaggregated": true
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "widgetType": "counter",
+       "encodings": {
+        "value": {
+         "fieldName": "resellers",
+         "displayName": "Resellers (stores)",
+         "format": {
+          "type": "number-plain",
+          "abbreviation": "none",
+          "decimalPlaces": {
+           "type": "max",
+           "places": 0
+          }
+         }
+        }
+       },
+       "frame": {
+        "showTitle": true,
+        "title": "Resellers (stores)"
+       }
+      }
+     },
+     "position": {
+      "x": 2,
+      "y": 2,
+      "width": 2,
+      "height": 3
+     }
+    },
+    {
+     "widget": {
+      "name": "c_individuals",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "customer_stats",
+         "fields": [
+          {
+           "name": "individuals",
+           "expression": "`individuals`"
+          }
+         ],
+         "disaggregated": true
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "widgetType": "counter",
+       "encodings": {
+        "value": {
+         "fieldName": "individuals",
+         "displayName": "Individuals (online)",
+         "format": {
+          "type": "number-plain",
+          "abbreviation": "none",
+          "decimalPlaces": {
+           "type": "max",
+           "places": 0
+          }
+         }
+        }
+       },
+       "frame": {
+        "showTitle": true,
+        "title": "Individuals (online)"
+       }
+      }
+     },
+     "position": {
+      "x": 4,
+      "y": 2,
+      "width": 2,
+      "height": 3
+     }
+    },
+    {
+     "widget": {
+      "name": "c_single",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "customer_stats",
+         "fields": [
+          {
+           "name": "single_order_share",
+           "expression": "`single_order_share`"
+          }
+         ],
+         "disaggregated": true
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "widgetType": "counter",
+       "encodings": {
+        "value": {
+         "fieldName": "single_order_share",
+         "displayName": "Customers with a single order",
+         "format": {
+          "type": "number-percent",
+          "decimalPlaces": {
+           "type": "max",
+           "places": 0
+          }
+         }
+        }
+       },
+       "frame": {
+        "showTitle": true,
+        "title": "Customers with a single order"
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 5,
+      "width": 2,
+      "height": 3
+     }
+    },
+    {
+     "widget": {
+      "name": "b_customers",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "customers_top",
+         "fields": [
+          {
+           "name": "customer_name",
+           "expression": "`customer_name`"
+          },
+          {
+           "name": "net_sales",
+           "expression": "`net_sales`"
+          }
+         ],
+         "disaggregated": true
+        }
+       }
+      ],
+      "spec": {
+       "version": 3,
+       "widgetType": "bar",
+       "encodings": {
+        "y": {
+         "fieldName": "customer_name",
+         "scale": {
+          "type": "categorical"
+         },
+         "displayName": "Customer"
+        },
+        "x": {
+         "fieldName": "net_sales",
+         "scale": {
+          "type": "quantitative"
+         },
+         "displayName": "Net sales"
+        }
+       },
+       "frame": {
+        "showTitle": true,
+        "title": "Top 10 customers by net sales (question c)"
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 8,
+      "width": 6,
+      "height": 7
+     }
+    },
+    {
+     "widget": {
+      "name": "b_cities",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "cities_top",
+         "fields": [
+          {
+           "name": "city_label",
+           "expression": "`city_label`"
+          },
+          {
+           "name": "net_sales",
+           "expression": "`net_sales`"
+          }
+         ],
+         "disaggregated": true
+        }
+       }
+      ],
+      "spec": {
+       "version": 3,
+       "widgetType": "bar",
+       "encodings": {
+        "y": {
+         "fieldName": "city_label",
+         "scale": {
+          "type": "categorical"
+         },
+         "displayName": "City"
+        },
+        "x": {
+         "fieldName": "net_sales",
+         "scale": {
+          "type": "quantitative"
+         },
+         "displayName": "Net sales"
+        }
+       },
+       "frame": {
+        "showTitle": true,
+        "title": "Top 5 cities by net sales (question d)"
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 15,
+      "width": 3,
+      "height": 5
+     }
+    },
+    {
+     "widget": {
+      "name": "b_countries",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "countries",
+         "fields": [
+          {
+           "name": "country",
+           "expression": "`country`"
+          },
+          {
+           "name": "net_sales",
+           "expression": "`net_sales`"
+          }
+         ],
+         "disaggregated": true
+        }
+       }
+      ],
+      "spec": {
+       "version": 3,
+       "widgetType": "bar",
+       "encodings": {
+        "y": {
+         "fieldName": "country",
+         "scale": {
+          "type": "categorical"
+         },
+         "displayName": "Country"
+        },
+        "x": {
+         "fieldName": "net_sales",
+         "scale": {
+          "type": "quantitative"
+         },
+         "displayName": "Net sales"
+        }
+       },
+       "frame": {
+        "showTitle": true,
+        "title": "Net sales by country"
+       }
+      }
+     },
+     "position": {
+      "x": 3,
+      "y": 15,
+      "width": 3,
+      "height": 5
+     }
+    },
+    {
+     "widget": {
+      "name": "t_states",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "states_top",
+         "fields": [
+          {
+           "name": "state",
+           "expression": "`state`"
+          },
+          {
+           "name": "country",
+           "expression": "`country`"
+          },
+          {
+           "name": "orders",
+           "expression": "`orders`"
+          },
+          {
+           "name": "net_sales",
+           "expression": "`net_sales`"
+          }
+         ],
+         "disaggregated": true
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "widgetType": "table",
+       "encodings": {
+        "columns": [
+         {
+          "fieldName": "state",
+          "displayName": "State"
+         },
+         {
+          "fieldName": "country",
+          "displayName": "Country"
+         },
+         {
+          "fieldName": "orders",
+          "displayName": "Orders"
+         },
+         {
+          "fieldName": "net_sales",
+          "displayName": "Net sales"
+         }
+        ]
+       },
+       "itemsPerPage": 10,
+       "frame": {
+        "showTitle": true,
+        "title": "Top 10 states and provinces"
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 20,
+      "width": 6,
+      "height": 6
+     }
+    }
+   ],
+   "pageType": "PAGE_TYPE_CANVAS"
+  },
+  {
+   "name": "page_filters",
+   "displayName": "Filters",
+   "layout": [
+    {
+     "widget": {
+      "name": "f_year",
+      "queries": [
+       {
+        "name": "q_options",
+        "query": {
+         "datasetName": "filter_values",
+         "fields": [
+          {
+           "name": "order_year",
+           "expression": "`order_year`"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_kpi",
+        "query": {
+         "datasetName": "kpi",
+         "parameters": [
+          {
+           "name": "p_year",
+           "keyword": "p_year"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_monthly",
+        "query": {
+         "datasetName": "monthly",
+         "parameters": [
+          {
+           "name": "p_year",
+           "keyword": "p_year"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_yearly",
+        "query": {
+         "datasetName": "yearly",
+         "parameters": [
+          {
+           "name": "p_year",
+           "keyword": "p_year"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_categories",
+        "query": {
+         "datasetName": "categories",
+         "parameters": [
+          {
+           "name": "p_year",
+           "keyword": "p_year"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_channels",
+        "query": {
+         "datasetName": "channels",
+         "parameters": [
+          {
+           "name": "p_year",
+           "keyword": "p_year"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_products_aov",
+        "query": {
+         "datasetName": "products_aov",
+         "parameters": [
+          {
+           "name": "p_year",
+           "keyword": "p_year"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_products_top",
+        "query": {
+         "datasetName": "products_top",
+         "parameters": [
+          {
+           "name": "p_year",
+           "keyword": "p_year"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_customers_top",
+        "query": {
+         "datasetName": "customers_top",
+         "parameters": [
+          {
+           "name": "p_year",
+           "keyword": "p_year"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_cities_top",
+        "query": {
+         "datasetName": "cities_top",
+         "parameters": [
+          {
+           "name": "p_year",
+           "keyword": "p_year"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_countries",
+        "query": {
+         "datasetName": "countries",
+         "parameters": [
+          {
+           "name": "p_year",
+           "keyword": "p_year"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_states_top",
+        "query": {
+         "datasetName": "states_top",
+         "parameters": [
+          {
+           "name": "p_year",
+           "keyword": "p_year"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_cards",
+        "query": {
+         "datasetName": "cards",
+         "parameters": [
+          {
+           "name": "p_year",
+           "keyword": "p_year"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_customer_stats",
+        "query": {
+         "datasetName": "customer_stats",
+         "parameters": [
+          {
+           "name": "p_year",
+           "keyword": "p_year"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_reasons",
+        "query": {
+         "datasetName": "reasons",
+         "parameters": [
+          {
+           "name": "p_year",
+           "keyword": "p_year"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_promo_products",
+        "query": {
+         "datasetName": "promo_products",
+         "parameters": [
+          {
+           "name": "p_year",
+           "keyword": "p_year"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "widgetType": "filter-multi-select",
+       "encodings": {
+        "fields": [
+         {
+          "fieldName": "order_year",
+          "queryName": "q_options"
+         },
+         {
+          "parameterName": "p_year",
+          "queryName": "q_kpi"
+         },
+         {
+          "parameterName": "p_year",
+          "queryName": "q_monthly"
+         },
+         {
+          "parameterName": "p_year",
+          "queryName": "q_yearly"
+         },
+         {
+          "parameterName": "p_year",
+          "queryName": "q_categories"
+         },
+         {
+          "parameterName": "p_year",
+          "queryName": "q_channels"
+         },
+         {
+          "parameterName": "p_year",
+          "queryName": "q_products_aov"
+         },
+         {
+          "parameterName": "p_year",
+          "queryName": "q_products_top"
+         },
+         {
+          "parameterName": "p_year",
+          "queryName": "q_customers_top"
+         },
+         {
+          "parameterName": "p_year",
+          "queryName": "q_cities_top"
+         },
+         {
+          "parameterName": "p_year",
+          "queryName": "q_countries"
+         },
+         {
+          "parameterName": "p_year",
+          "queryName": "q_states_top"
+         },
+         {
+          "parameterName": "p_year",
+          "queryName": "q_cards"
+         },
+         {
+          "parameterName": "p_year",
+          "queryName": "q_customer_stats"
+         },
+         {
+          "parameterName": "p_year",
+          "queryName": "q_reasons"
+         },
+         {
+          "parameterName": "p_year",
+          "queryName": "q_promo_products"
+         }
+        ]
+       },
+       "frame": {
+        "showTitle": true,
+        "title": "Year"
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 0,
+      "width": 2,
+      "height": 2
+     }
+    },
+    {
+     "widget": {
+      "name": "f_month",
+      "queries": [
+       {
+        "name": "q_options",
+        "query": {
+         "datasetName": "filter_values",
+         "fields": [
+          {
+           "name": "month_label",
+           "expression": "`month_label`"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_kpi",
+        "query": {
+         "datasetName": "kpi",
+         "parameters": [
+          {
+           "name": "p_month",
+           "keyword": "p_month"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_monthly",
+        "query": {
+         "datasetName": "monthly",
+         "parameters": [
+          {
+           "name": "p_month",
+           "keyword": "p_month"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_yearly",
+        "query": {
+         "datasetName": "yearly",
+         "parameters": [
+          {
+           "name": "p_month",
+           "keyword": "p_month"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_categories",
+        "query": {
+         "datasetName": "categories",
+         "parameters": [
+          {
+           "name": "p_month",
+           "keyword": "p_month"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_channels",
+        "query": {
+         "datasetName": "channels",
+         "parameters": [
+          {
+           "name": "p_month",
+           "keyword": "p_month"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_products_aov",
+        "query": {
+         "datasetName": "products_aov",
+         "parameters": [
+          {
+           "name": "p_month",
+           "keyword": "p_month"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_products_top",
+        "query": {
+         "datasetName": "products_top",
+         "parameters": [
+          {
+           "name": "p_month",
+           "keyword": "p_month"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_customers_top",
+        "query": {
+         "datasetName": "customers_top",
+         "parameters": [
+          {
+           "name": "p_month",
+           "keyword": "p_month"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_cities_top",
+        "query": {
+         "datasetName": "cities_top",
+         "parameters": [
+          {
+           "name": "p_month",
+           "keyword": "p_month"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_countries",
+        "query": {
+         "datasetName": "countries",
+         "parameters": [
+          {
+           "name": "p_month",
+           "keyword": "p_month"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_states_top",
+        "query": {
+         "datasetName": "states_top",
+         "parameters": [
+          {
+           "name": "p_month",
+           "keyword": "p_month"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_cards",
+        "query": {
+         "datasetName": "cards",
+         "parameters": [
+          {
+           "name": "p_month",
+           "keyword": "p_month"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_customer_stats",
+        "query": {
+         "datasetName": "customer_stats",
+         "parameters": [
+          {
+           "name": "p_month",
+           "keyword": "p_month"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_reasons",
+        "query": {
+         "datasetName": "reasons",
+         "parameters": [
+          {
+           "name": "p_month",
+           "keyword": "p_month"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_promo_products",
+        "query": {
+         "datasetName": "promo_products",
+         "parameters": [
+          {
+           "name": "p_month",
+           "keyword": "p_month"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "widgetType": "filter-multi-select",
+       "encodings": {
+        "fields": [
+         {
+          "fieldName": "month_label",
+          "queryName": "q_options"
+         },
+         {
+          "parameterName": "p_month",
+          "queryName": "q_kpi"
+         },
+         {
+          "parameterName": "p_month",
+          "queryName": "q_monthly"
+         },
+         {
+          "parameterName": "p_month",
+          "queryName": "q_yearly"
+         },
+         {
+          "parameterName": "p_month",
+          "queryName": "q_categories"
+         },
+         {
+          "parameterName": "p_month",
+          "queryName": "q_channels"
+         },
+         {
+          "parameterName": "p_month",
+          "queryName": "q_products_aov"
+         },
+         {
+          "parameterName": "p_month",
+          "queryName": "q_products_top"
+         },
+         {
+          "parameterName": "p_month",
+          "queryName": "q_customers_top"
+         },
+         {
+          "parameterName": "p_month",
+          "queryName": "q_cities_top"
+         },
+         {
+          "parameterName": "p_month",
+          "queryName": "q_countries"
+         },
+         {
+          "parameterName": "p_month",
+          "queryName": "q_states_top"
+         },
+         {
+          "parameterName": "p_month",
+          "queryName": "q_cards"
+         },
+         {
+          "parameterName": "p_month",
+          "queryName": "q_customer_stats"
+         },
+         {
+          "parameterName": "p_month",
+          "queryName": "q_reasons"
+         },
+         {
+          "parameterName": "p_month",
+          "queryName": "q_promo_products"
+         }
+        ]
+       },
+       "frame": {
+        "showTitle": true,
+        "title": "Month"
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 2,
+      "width": 2,
+      "height": 2
+     }
+    },
+    {
+     "widget": {
+      "name": "f_channel",
+      "queries": [
+       {
+        "name": "q_options",
+        "query": {
+         "datasetName": "filter_values",
+         "fields": [
+          {
+           "name": "channel",
+           "expression": "`channel`"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_kpi",
+        "query": {
+         "datasetName": "kpi",
+         "parameters": [
+          {
+           "name": "p_channel",
+           "keyword": "p_channel"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_monthly",
+        "query": {
+         "datasetName": "monthly",
+         "parameters": [
+          {
+           "name": "p_channel",
+           "keyword": "p_channel"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_yearly",
+        "query": {
+         "datasetName": "yearly",
+         "parameters": [
+          {
+           "name": "p_channel",
+           "keyword": "p_channel"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_categories",
+        "query": {
+         "datasetName": "categories",
+         "parameters": [
+          {
+           "name": "p_channel",
+           "keyword": "p_channel"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_channels",
+        "query": {
+         "datasetName": "channels",
+         "parameters": [
+          {
+           "name": "p_channel",
+           "keyword": "p_channel"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_products_aov",
+        "query": {
+         "datasetName": "products_aov",
+         "parameters": [
+          {
+           "name": "p_channel",
+           "keyword": "p_channel"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_products_top",
+        "query": {
+         "datasetName": "products_top",
+         "parameters": [
+          {
+           "name": "p_channel",
+           "keyword": "p_channel"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_customers_top",
+        "query": {
+         "datasetName": "customers_top",
+         "parameters": [
+          {
+           "name": "p_channel",
+           "keyword": "p_channel"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_cities_top",
+        "query": {
+         "datasetName": "cities_top",
+         "parameters": [
+          {
+           "name": "p_channel",
+           "keyword": "p_channel"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_countries",
+        "query": {
+         "datasetName": "countries",
+         "parameters": [
+          {
+           "name": "p_channel",
+           "keyword": "p_channel"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_states_top",
+        "query": {
+         "datasetName": "states_top",
+         "parameters": [
+          {
+           "name": "p_channel",
+           "keyword": "p_channel"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_cards",
+        "query": {
+         "datasetName": "cards",
+         "parameters": [
+          {
+           "name": "p_channel",
+           "keyword": "p_channel"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_customer_stats",
+        "query": {
+         "datasetName": "customer_stats",
+         "parameters": [
+          {
+           "name": "p_channel",
+           "keyword": "p_channel"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_reasons",
+        "query": {
+         "datasetName": "reasons",
+         "parameters": [
+          {
+           "name": "p_channel",
+           "keyword": "p_channel"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_promo_products",
+        "query": {
+         "datasetName": "promo_products",
+         "parameters": [
+          {
+           "name": "p_channel",
+           "keyword": "p_channel"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "widgetType": "filter-multi-select",
+       "encodings": {
+        "fields": [
+         {
+          "fieldName": "channel",
+          "queryName": "q_options"
+         },
+         {
+          "parameterName": "p_channel",
+          "queryName": "q_kpi"
+         },
+         {
+          "parameterName": "p_channel",
+          "queryName": "q_monthly"
+         },
+         {
+          "parameterName": "p_channel",
+          "queryName": "q_yearly"
+         },
+         {
+          "parameterName": "p_channel",
+          "queryName": "q_categories"
+         },
+         {
+          "parameterName": "p_channel",
+          "queryName": "q_channels"
+         },
+         {
+          "parameterName": "p_channel",
+          "queryName": "q_products_aov"
+         },
+         {
+          "parameterName": "p_channel",
+          "queryName": "q_products_top"
+         },
+         {
+          "parameterName": "p_channel",
+          "queryName": "q_customers_top"
+         },
+         {
+          "parameterName": "p_channel",
+          "queryName": "q_cities_top"
+         },
+         {
+          "parameterName": "p_channel",
+          "queryName": "q_countries"
+         },
+         {
+          "parameterName": "p_channel",
+          "queryName": "q_states_top"
+         },
+         {
+          "parameterName": "p_channel",
+          "queryName": "q_cards"
+         },
+         {
+          "parameterName": "p_channel",
+          "queryName": "q_customer_stats"
+         },
+         {
+          "parameterName": "p_channel",
+          "queryName": "q_reasons"
+         },
+         {
+          "parameterName": "p_channel",
+          "queryName": "q_promo_products"
+         }
+        ]
+       },
+       "frame": {
+        "showTitle": true,
+        "title": "Channel"
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 4,
+      "width": 2,
+      "height": 2
+     }
+    },
+    {
+     "widget": {
+      "name": "f_country",
+      "queries": [
+       {
+        "name": "q_options",
+        "query": {
+         "datasetName": "filter_values",
+         "fields": [
+          {
+           "name": "country",
+           "expression": "`country`"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_kpi",
+        "query": {
+         "datasetName": "kpi",
+         "parameters": [
+          {
+           "name": "p_country",
+           "keyword": "p_country"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_monthly",
+        "query": {
+         "datasetName": "monthly",
+         "parameters": [
+          {
+           "name": "p_country",
+           "keyword": "p_country"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_yearly",
+        "query": {
+         "datasetName": "yearly",
+         "parameters": [
+          {
+           "name": "p_country",
+           "keyword": "p_country"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_categories",
+        "query": {
+         "datasetName": "categories",
+         "parameters": [
+          {
+           "name": "p_country",
+           "keyword": "p_country"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_channels",
+        "query": {
+         "datasetName": "channels",
+         "parameters": [
+          {
+           "name": "p_country",
+           "keyword": "p_country"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_products_aov",
+        "query": {
+         "datasetName": "products_aov",
+         "parameters": [
+          {
+           "name": "p_country",
+           "keyword": "p_country"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_products_top",
+        "query": {
+         "datasetName": "products_top",
+         "parameters": [
+          {
+           "name": "p_country",
+           "keyword": "p_country"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_customers_top",
+        "query": {
+         "datasetName": "customers_top",
+         "parameters": [
+          {
+           "name": "p_country",
+           "keyword": "p_country"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_cities_top",
+        "query": {
+         "datasetName": "cities_top",
+         "parameters": [
+          {
+           "name": "p_country",
+           "keyword": "p_country"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_countries",
+        "query": {
+         "datasetName": "countries",
+         "parameters": [
+          {
+           "name": "p_country",
+           "keyword": "p_country"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_states_top",
+        "query": {
+         "datasetName": "states_top",
+         "parameters": [
+          {
+           "name": "p_country",
+           "keyword": "p_country"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_cards",
+        "query": {
+         "datasetName": "cards",
+         "parameters": [
+          {
+           "name": "p_country",
+           "keyword": "p_country"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_customer_stats",
+        "query": {
+         "datasetName": "customer_stats",
+         "parameters": [
+          {
+           "name": "p_country",
+           "keyword": "p_country"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_reasons",
+        "query": {
+         "datasetName": "reasons",
+         "parameters": [
+          {
+           "name": "p_country",
+           "keyword": "p_country"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_promo_products",
+        "query": {
+         "datasetName": "promo_products",
+         "parameters": [
+          {
+           "name": "p_country",
+           "keyword": "p_country"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "widgetType": "filter-multi-select",
+       "encodings": {
+        "fields": [
+         {
+          "fieldName": "country",
+          "queryName": "q_options"
+         },
+         {
+          "parameterName": "p_country",
+          "queryName": "q_kpi"
+         },
+         {
+          "parameterName": "p_country",
+          "queryName": "q_monthly"
+         },
+         {
+          "parameterName": "p_country",
+          "queryName": "q_yearly"
+         },
+         {
+          "parameterName": "p_country",
+          "queryName": "q_categories"
+         },
+         {
+          "parameterName": "p_country",
+          "queryName": "q_channels"
+         },
+         {
+          "parameterName": "p_country",
+          "queryName": "q_products_aov"
+         },
+         {
+          "parameterName": "p_country",
+          "queryName": "q_products_top"
+         },
+         {
+          "parameterName": "p_country",
+          "queryName": "q_customers_top"
+         },
+         {
+          "parameterName": "p_country",
+          "queryName": "q_cities_top"
+         },
+         {
+          "parameterName": "p_country",
+          "queryName": "q_countries"
+         },
+         {
+          "parameterName": "p_country",
+          "queryName": "q_states_top"
+         },
+         {
+          "parameterName": "p_country",
+          "queryName": "q_cards"
+         },
+         {
+          "parameterName": "p_country",
+          "queryName": "q_customer_stats"
+         },
+         {
+          "parameterName": "p_country",
+          "queryName": "q_reasons"
+         },
+         {
+          "parameterName": "p_country",
+          "queryName": "q_promo_products"
+         }
+        ]
+       },
+       "frame": {
+        "showTitle": true,
+        "title": "Country"
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 6,
+      "width": 2,
+      "height": 2
+     }
+    },
+    {
+     "widget": {
+      "name": "f_state",
+      "queries": [
+       {
+        "name": "q_options",
+        "query": {
+         "datasetName": "filter_values",
+         "fields": [
+          {
+           "name": "state",
+           "expression": "`state`"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_kpi",
+        "query": {
+         "datasetName": "kpi",
+         "parameters": [
+          {
+           "name": "p_state",
+           "keyword": "p_state"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_monthly",
+        "query": {
+         "datasetName": "monthly",
+         "parameters": [
+          {
+           "name": "p_state",
+           "keyword": "p_state"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_yearly",
+        "query": {
+         "datasetName": "yearly",
+         "parameters": [
+          {
+           "name": "p_state",
+           "keyword": "p_state"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_categories",
+        "query": {
+         "datasetName": "categories",
+         "parameters": [
+          {
+           "name": "p_state",
+           "keyword": "p_state"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_channels",
+        "query": {
+         "datasetName": "channels",
+         "parameters": [
+          {
+           "name": "p_state",
+           "keyword": "p_state"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_products_aov",
+        "query": {
+         "datasetName": "products_aov",
+         "parameters": [
+          {
+           "name": "p_state",
+           "keyword": "p_state"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_products_top",
+        "query": {
+         "datasetName": "products_top",
+         "parameters": [
+          {
+           "name": "p_state",
+           "keyword": "p_state"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_customers_top",
+        "query": {
+         "datasetName": "customers_top",
+         "parameters": [
+          {
+           "name": "p_state",
+           "keyword": "p_state"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_cities_top",
+        "query": {
+         "datasetName": "cities_top",
+         "parameters": [
+          {
+           "name": "p_state",
+           "keyword": "p_state"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_countries",
+        "query": {
+         "datasetName": "countries",
+         "parameters": [
+          {
+           "name": "p_state",
+           "keyword": "p_state"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_states_top",
+        "query": {
+         "datasetName": "states_top",
+         "parameters": [
+          {
+           "name": "p_state",
+           "keyword": "p_state"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_cards",
+        "query": {
+         "datasetName": "cards",
+         "parameters": [
+          {
+           "name": "p_state",
+           "keyword": "p_state"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_customer_stats",
+        "query": {
+         "datasetName": "customer_stats",
+         "parameters": [
+          {
+           "name": "p_state",
+           "keyword": "p_state"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_reasons",
+        "query": {
+         "datasetName": "reasons",
+         "parameters": [
+          {
+           "name": "p_state",
+           "keyword": "p_state"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_promo_products",
+        "query": {
+         "datasetName": "promo_products",
+         "parameters": [
+          {
+           "name": "p_state",
+           "keyword": "p_state"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "widgetType": "filter-multi-select",
+       "encodings": {
+        "fields": [
+         {
+          "fieldName": "state",
+          "queryName": "q_options"
+         },
+         {
+          "parameterName": "p_state",
+          "queryName": "q_kpi"
+         },
+         {
+          "parameterName": "p_state",
+          "queryName": "q_monthly"
+         },
+         {
+          "parameterName": "p_state",
+          "queryName": "q_yearly"
+         },
+         {
+          "parameterName": "p_state",
+          "queryName": "q_categories"
+         },
+         {
+          "parameterName": "p_state",
+          "queryName": "q_channels"
+         },
+         {
+          "parameterName": "p_state",
+          "queryName": "q_products_aov"
+         },
+         {
+          "parameterName": "p_state",
+          "queryName": "q_products_top"
+         },
+         {
+          "parameterName": "p_state",
+          "queryName": "q_customers_top"
+         },
+         {
+          "parameterName": "p_state",
+          "queryName": "q_cities_top"
+         },
+         {
+          "parameterName": "p_state",
+          "queryName": "q_countries"
+         },
+         {
+          "parameterName": "p_state",
+          "queryName": "q_states_top"
+         },
+         {
+          "parameterName": "p_state",
+          "queryName": "q_cards"
+         },
+         {
+          "parameterName": "p_state",
+          "queryName": "q_customer_stats"
+         },
+         {
+          "parameterName": "p_state",
+          "queryName": "q_reasons"
+         },
+         {
+          "parameterName": "p_state",
+          "queryName": "q_promo_products"
+         }
+        ]
+       },
+       "frame": {
+        "showTitle": true,
+        "title": "State"
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 8,
+      "width": 2,
+      "height": 2
+     }
+    },
+    {
+     "widget": {
+      "name": "f_city",
+      "queries": [
+       {
+        "name": "q_options",
+        "query": {
+         "datasetName": "filter_values",
+         "fields": [
+          {
+           "name": "city",
+           "expression": "`city`"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_kpi",
+        "query": {
+         "datasetName": "kpi",
+         "parameters": [
+          {
+           "name": "p_city",
+           "keyword": "p_city"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_monthly",
+        "query": {
+         "datasetName": "monthly",
+         "parameters": [
+          {
+           "name": "p_city",
+           "keyword": "p_city"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_yearly",
+        "query": {
+         "datasetName": "yearly",
+         "parameters": [
+          {
+           "name": "p_city",
+           "keyword": "p_city"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_categories",
+        "query": {
+         "datasetName": "categories",
+         "parameters": [
+          {
+           "name": "p_city",
+           "keyword": "p_city"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_channels",
+        "query": {
+         "datasetName": "channels",
+         "parameters": [
+          {
+           "name": "p_city",
+           "keyword": "p_city"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_products_aov",
+        "query": {
+         "datasetName": "products_aov",
+         "parameters": [
+          {
+           "name": "p_city",
+           "keyword": "p_city"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_products_top",
+        "query": {
+         "datasetName": "products_top",
+         "parameters": [
+          {
+           "name": "p_city",
+           "keyword": "p_city"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_customers_top",
+        "query": {
+         "datasetName": "customers_top",
+         "parameters": [
+          {
+           "name": "p_city",
+           "keyword": "p_city"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_cities_top",
+        "query": {
+         "datasetName": "cities_top",
+         "parameters": [
+          {
+           "name": "p_city",
+           "keyword": "p_city"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_countries",
+        "query": {
+         "datasetName": "countries",
+         "parameters": [
+          {
+           "name": "p_city",
+           "keyword": "p_city"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_states_top",
+        "query": {
+         "datasetName": "states_top",
+         "parameters": [
+          {
+           "name": "p_city",
+           "keyword": "p_city"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_cards",
+        "query": {
+         "datasetName": "cards",
+         "parameters": [
+          {
+           "name": "p_city",
+           "keyword": "p_city"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_customer_stats",
+        "query": {
+         "datasetName": "customer_stats",
+         "parameters": [
+          {
+           "name": "p_city",
+           "keyword": "p_city"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_reasons",
+        "query": {
+         "datasetName": "reasons",
+         "parameters": [
+          {
+           "name": "p_city",
+           "keyword": "p_city"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_promo_products",
+        "query": {
+         "datasetName": "promo_products",
+         "parameters": [
+          {
+           "name": "p_city",
+           "keyword": "p_city"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "widgetType": "filter-multi-select",
+       "encodings": {
+        "fields": [
+         {
+          "fieldName": "city",
+          "queryName": "q_options"
+         },
+         {
+          "parameterName": "p_city",
+          "queryName": "q_kpi"
+         },
+         {
+          "parameterName": "p_city",
+          "queryName": "q_monthly"
+         },
+         {
+          "parameterName": "p_city",
+          "queryName": "q_yearly"
+         },
+         {
+          "parameterName": "p_city",
+          "queryName": "q_categories"
+         },
+         {
+          "parameterName": "p_city",
+          "queryName": "q_channels"
+         },
+         {
+          "parameterName": "p_city",
+          "queryName": "q_products_aov"
+         },
+         {
+          "parameterName": "p_city",
+          "queryName": "q_products_top"
+         },
+         {
+          "parameterName": "p_city",
+          "queryName": "q_customers_top"
+         },
+         {
+          "parameterName": "p_city",
+          "queryName": "q_cities_top"
+         },
+         {
+          "parameterName": "p_city",
+          "queryName": "q_countries"
+         },
+         {
+          "parameterName": "p_city",
+          "queryName": "q_states_top"
+         },
+         {
+          "parameterName": "p_city",
+          "queryName": "q_cards"
+         },
+         {
+          "parameterName": "p_city",
+          "queryName": "q_customer_stats"
+         },
+         {
+          "parameterName": "p_city",
+          "queryName": "q_reasons"
+         },
+         {
+          "parameterName": "p_city",
+          "queryName": "q_promo_products"
+         }
+        ]
+       },
+       "frame": {
+        "showTitle": true,
+        "title": "City"
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 10,
+      "width": 2,
+      "height": 2
+     }
+    },
+    {
+     "widget": {
+      "name": "f_category",
+      "queries": [
+       {
+        "name": "q_options",
+        "query": {
+         "datasetName": "filter_values",
+         "fields": [
+          {
+           "name": "category",
+           "expression": "`category`"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_kpi",
+        "query": {
+         "datasetName": "kpi",
+         "parameters": [
+          {
+           "name": "p_category",
+           "keyword": "p_category"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_monthly",
+        "query": {
+         "datasetName": "monthly",
+         "parameters": [
+          {
+           "name": "p_category",
+           "keyword": "p_category"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_yearly",
+        "query": {
+         "datasetName": "yearly",
+         "parameters": [
+          {
+           "name": "p_category",
+           "keyword": "p_category"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_categories",
+        "query": {
+         "datasetName": "categories",
+         "parameters": [
+          {
+           "name": "p_category",
+           "keyword": "p_category"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_channels",
+        "query": {
+         "datasetName": "channels",
+         "parameters": [
+          {
+           "name": "p_category",
+           "keyword": "p_category"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_products_aov",
+        "query": {
+         "datasetName": "products_aov",
+         "parameters": [
+          {
+           "name": "p_category",
+           "keyword": "p_category"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_products_top",
+        "query": {
+         "datasetName": "products_top",
+         "parameters": [
+          {
+           "name": "p_category",
+           "keyword": "p_category"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_customers_top",
+        "query": {
+         "datasetName": "customers_top",
+         "parameters": [
+          {
+           "name": "p_category",
+           "keyword": "p_category"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_cities_top",
+        "query": {
+         "datasetName": "cities_top",
+         "parameters": [
+          {
+           "name": "p_category",
+           "keyword": "p_category"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_countries",
+        "query": {
+         "datasetName": "countries",
+         "parameters": [
+          {
+           "name": "p_category",
+           "keyword": "p_category"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_states_top",
+        "query": {
+         "datasetName": "states_top",
+         "parameters": [
+          {
+           "name": "p_category",
+           "keyword": "p_category"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_cards",
+        "query": {
+         "datasetName": "cards",
+         "parameters": [
+          {
+           "name": "p_category",
+           "keyword": "p_category"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_customer_stats",
+        "query": {
+         "datasetName": "customer_stats",
+         "parameters": [
+          {
+           "name": "p_category",
+           "keyword": "p_category"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_reasons",
+        "query": {
+         "datasetName": "reasons",
+         "parameters": [
+          {
+           "name": "p_category",
+           "keyword": "p_category"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_promo_products",
+        "query": {
+         "datasetName": "promo_products",
+         "parameters": [
+          {
+           "name": "p_category",
+           "keyword": "p_category"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "widgetType": "filter-multi-select",
+       "encodings": {
+        "fields": [
+         {
+          "fieldName": "category",
+          "queryName": "q_options"
+         },
+         {
+          "parameterName": "p_category",
+          "queryName": "q_kpi"
+         },
+         {
+          "parameterName": "p_category",
+          "queryName": "q_monthly"
+         },
+         {
+          "parameterName": "p_category",
+          "queryName": "q_yearly"
+         },
+         {
+          "parameterName": "p_category",
+          "queryName": "q_categories"
+         },
+         {
+          "parameterName": "p_category",
+          "queryName": "q_channels"
+         },
+         {
+          "parameterName": "p_category",
+          "queryName": "q_products_aov"
+         },
+         {
+          "parameterName": "p_category",
+          "queryName": "q_products_top"
+         },
+         {
+          "parameterName": "p_category",
+          "queryName": "q_customers_top"
+         },
+         {
+          "parameterName": "p_category",
+          "queryName": "q_cities_top"
+         },
+         {
+          "parameterName": "p_category",
+          "queryName": "q_countries"
+         },
+         {
+          "parameterName": "p_category",
+          "queryName": "q_states_top"
+         },
+         {
+          "parameterName": "p_category",
+          "queryName": "q_cards"
+         },
+         {
+          "parameterName": "p_category",
+          "queryName": "q_customer_stats"
+         },
+         {
+          "parameterName": "p_category",
+          "queryName": "q_reasons"
+         },
+         {
+          "parameterName": "p_category",
+          "queryName": "q_promo_products"
+         }
+        ]
+       },
+       "frame": {
+        "showTitle": true,
+        "title": "Category"
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 12,
+      "width": 2,
+      "height": 2
+     }
+    },
+    {
+     "widget": {
+      "name": "f_card",
+      "queries": [
+       {
+        "name": "q_options",
+        "query": {
+         "datasetName": "filter_values",
+         "fields": [
+          {
+           "name": "card_type",
+           "expression": "`card_type`"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_kpi",
+        "query": {
+         "datasetName": "kpi",
+         "parameters": [
+          {
+           "name": "p_card",
+           "keyword": "p_card"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_monthly",
+        "query": {
+         "datasetName": "monthly",
+         "parameters": [
+          {
+           "name": "p_card",
+           "keyword": "p_card"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_yearly",
+        "query": {
+         "datasetName": "yearly",
+         "parameters": [
+          {
+           "name": "p_card",
+           "keyword": "p_card"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_categories",
+        "query": {
+         "datasetName": "categories",
+         "parameters": [
+          {
+           "name": "p_card",
+           "keyword": "p_card"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_channels",
+        "query": {
+         "datasetName": "channels",
+         "parameters": [
+          {
+           "name": "p_card",
+           "keyword": "p_card"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_products_aov",
+        "query": {
+         "datasetName": "products_aov",
+         "parameters": [
+          {
+           "name": "p_card",
+           "keyword": "p_card"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_products_top",
+        "query": {
+         "datasetName": "products_top",
+         "parameters": [
+          {
+           "name": "p_card",
+           "keyword": "p_card"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_customers_top",
+        "query": {
+         "datasetName": "customers_top",
+         "parameters": [
+          {
+           "name": "p_card",
+           "keyword": "p_card"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_cities_top",
+        "query": {
+         "datasetName": "cities_top",
+         "parameters": [
+          {
+           "name": "p_card",
+           "keyword": "p_card"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_countries",
+        "query": {
+         "datasetName": "countries",
+         "parameters": [
+          {
+           "name": "p_card",
+           "keyword": "p_card"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_states_top",
+        "query": {
+         "datasetName": "states_top",
+         "parameters": [
+          {
+           "name": "p_card",
+           "keyword": "p_card"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_cards",
+        "query": {
+         "datasetName": "cards",
+         "parameters": [
+          {
+           "name": "p_card",
+           "keyword": "p_card"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_customer_stats",
+        "query": {
+         "datasetName": "customer_stats",
+         "parameters": [
+          {
+           "name": "p_card",
+           "keyword": "p_card"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_reasons",
+        "query": {
+         "datasetName": "reasons",
+         "parameters": [
+          {
+           "name": "p_card",
+           "keyword": "p_card"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_promo_products",
+        "query": {
+         "datasetName": "promo_products",
+         "parameters": [
+          {
+           "name": "p_card",
+           "keyword": "p_card"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "widgetType": "filter-multi-select",
+       "encodings": {
+        "fields": [
+         {
+          "fieldName": "card_type",
+          "queryName": "q_options"
+         },
+         {
+          "parameterName": "p_card",
+          "queryName": "q_kpi"
+         },
+         {
+          "parameterName": "p_card",
+          "queryName": "q_monthly"
+         },
+         {
+          "parameterName": "p_card",
+          "queryName": "q_yearly"
+         },
+         {
+          "parameterName": "p_card",
+          "queryName": "q_categories"
+         },
+         {
+          "parameterName": "p_card",
+          "queryName": "q_channels"
+         },
+         {
+          "parameterName": "p_card",
+          "queryName": "q_products_aov"
+         },
+         {
+          "parameterName": "p_card",
+          "queryName": "q_products_top"
+         },
+         {
+          "parameterName": "p_card",
+          "queryName": "q_customers_top"
+         },
+         {
+          "parameterName": "p_card",
+          "queryName": "q_cities_top"
+         },
+         {
+          "parameterName": "p_card",
+          "queryName": "q_countries"
+         },
+         {
+          "parameterName": "p_card",
+          "queryName": "q_states_top"
+         },
+         {
+          "parameterName": "p_card",
+          "queryName": "q_cards"
+         },
+         {
+          "parameterName": "p_card",
+          "queryName": "q_customer_stats"
+         },
+         {
+          "parameterName": "p_card",
+          "queryName": "q_reasons"
+         },
+         {
+          "parameterName": "p_card",
+          "queryName": "q_promo_products"
+         }
+        ]
+       },
+       "frame": {
+        "showTitle": true,
+        "title": "Card type"
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 14,
+      "width": 2,
+      "height": 2
+     }
+    },
+    {
+     "widget": {
+      "name": "f_status",
+      "queries": [
+       {
+        "name": "q_options",
+        "query": {
+         "datasetName": "filter_values",
+         "fields": [
+          {
+           "name": "order_status",
+           "expression": "`order_status`"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_kpi",
+        "query": {
+         "datasetName": "kpi",
+         "parameters": [
+          {
+           "name": "p_status",
+           "keyword": "p_status"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_monthly",
+        "query": {
+         "datasetName": "monthly",
+         "parameters": [
+          {
+           "name": "p_status",
+           "keyword": "p_status"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_yearly",
+        "query": {
+         "datasetName": "yearly",
+         "parameters": [
+          {
+           "name": "p_status",
+           "keyword": "p_status"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_categories",
+        "query": {
+         "datasetName": "categories",
+         "parameters": [
+          {
+           "name": "p_status",
+           "keyword": "p_status"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_channels",
+        "query": {
+         "datasetName": "channels",
+         "parameters": [
+          {
+           "name": "p_status",
+           "keyword": "p_status"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_products_aov",
+        "query": {
+         "datasetName": "products_aov",
+         "parameters": [
+          {
+           "name": "p_status",
+           "keyword": "p_status"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_products_top",
+        "query": {
+         "datasetName": "products_top",
+         "parameters": [
+          {
+           "name": "p_status",
+           "keyword": "p_status"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_customers_top",
+        "query": {
+         "datasetName": "customers_top",
+         "parameters": [
+          {
+           "name": "p_status",
+           "keyword": "p_status"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_cities_top",
+        "query": {
+         "datasetName": "cities_top",
+         "parameters": [
+          {
+           "name": "p_status",
+           "keyword": "p_status"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_countries",
+        "query": {
+         "datasetName": "countries",
+         "parameters": [
+          {
+           "name": "p_status",
+           "keyword": "p_status"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_states_top",
+        "query": {
+         "datasetName": "states_top",
+         "parameters": [
+          {
+           "name": "p_status",
+           "keyword": "p_status"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_cards",
+        "query": {
+         "datasetName": "cards",
+         "parameters": [
+          {
+           "name": "p_status",
+           "keyword": "p_status"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_customer_stats",
+        "query": {
+         "datasetName": "customer_stats",
+         "parameters": [
+          {
+           "name": "p_status",
+           "keyword": "p_status"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_reasons",
+        "query": {
+         "datasetName": "reasons",
+         "parameters": [
+          {
+           "name": "p_status",
+           "keyword": "p_status"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_promo_products",
+        "query": {
+         "datasetName": "promo_products",
+         "parameters": [
+          {
+           "name": "p_status",
+           "keyword": "p_status"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "widgetType": "filter-multi-select",
+       "encodings": {
+        "fields": [
+         {
+          "fieldName": "order_status",
+          "queryName": "q_options"
+         },
+         {
+          "parameterName": "p_status",
+          "queryName": "q_kpi"
+         },
+         {
+          "parameterName": "p_status",
+          "queryName": "q_monthly"
+         },
+         {
+          "parameterName": "p_status",
+          "queryName": "q_yearly"
+         },
+         {
+          "parameterName": "p_status",
+          "queryName": "q_categories"
+         },
+         {
+          "parameterName": "p_status",
+          "queryName": "q_channels"
+         },
+         {
+          "parameterName": "p_status",
+          "queryName": "q_products_aov"
+         },
+         {
+          "parameterName": "p_status",
+          "queryName": "q_products_top"
+         },
+         {
+          "parameterName": "p_status",
+          "queryName": "q_customers_top"
+         },
+         {
+          "parameterName": "p_status",
+          "queryName": "q_cities_top"
+         },
+         {
+          "parameterName": "p_status",
+          "queryName": "q_countries"
+         },
+         {
+          "parameterName": "p_status",
+          "queryName": "q_states_top"
+         },
+         {
+          "parameterName": "p_status",
+          "queryName": "q_cards"
+         },
+         {
+          "parameterName": "p_status",
+          "queryName": "q_customer_stats"
+         },
+         {
+          "parameterName": "p_status",
+          "queryName": "q_reasons"
+         },
+         {
+          "parameterName": "p_status",
+          "queryName": "q_promo_products"
+         }
+        ]
+       },
+       "frame": {
+        "showTitle": true,
+        "title": "Order status"
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 16,
+      "width": 2,
+      "height": 2
+     }
+    },
+    {
+     "widget": {
+      "name": "f_reason",
+      "queries": [
+       {
+        "name": "q_options",
+        "query": {
+         "datasetName": "reason_values",
+         "fields": [
+          {
+           "name": "sales_reason",
+           "expression": "`sales_reason`"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_reasons",
+        "query": {
+         "datasetName": "reasons",
+         "parameters": [
+          {
+           "name": "p_reason",
+           "keyword": "p_reason"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "q_promo_products",
+        "query": {
+         "datasetName": "promo_products",
+         "parameters": [
+          {
+           "name": "p_reason",
+           "keyword": "p_reason"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "widgetType": "filter-multi-select",
+       "encodings": {
+        "fields": [
+         {
+          "fieldName": "sales_reason",
+          "queryName": "q_options"
+         },
+         {
+          "parameterName": "p_reason",
+          "queryName": "q_reasons"
+         },
+         {
+          "parameterName": "p_reason",
+          "queryName": "q_promo_products"
+         }
+        ]
+       },
+       "frame": {
+        "showTitle": true,
+        "title": "Sales reason"
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 18,
+      "width": 2,
+      "height": 2
+     }
+    }
+   ],
+   "pageType": "PAGE_TYPE_GLOBAL_FILTERS"
+  }
+ ]
+}
