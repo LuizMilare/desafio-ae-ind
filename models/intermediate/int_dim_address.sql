@@ -17,11 +17,7 @@ with
     , joined as (
         select
             addresses.pk_addressid
-            , addresses.addressline1
-            , addresses.addressline2
             , addresses.city
-            , addresses.postalcode
-            , addresses.spatiallocation
             , stateprovinces.stateprovincecode
             , stateprovinces.countryregioncode
             , stateprovinces.stateprovince_name
