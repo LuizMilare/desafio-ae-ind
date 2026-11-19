@@ -8,7 +8,8 @@ tabelas da camada `marts` (`fact_sales`, dimensões e ponte de motivos de venda)
 
 O dashboard foi publicado com credenciais embutidas, então quem tem acesso ao
 workspace vê os dados sem precisar de permissão no warehouse. O workspace é
-Databricks Free Edition e o link exige login.
+Databricks Free Edition e o link exige login. Para quem não tem acesso, há um
+[PDF exportado do dashboard](dashboard_adventure_works_sales.pdf).
 
 ## Páginas e perguntas de negócio
 
