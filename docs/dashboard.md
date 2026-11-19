@@ -3,11 +3,12 @@
 Dashboard **Adventure Works Sales**, construído no Databricks AI/BI sobre as
 tabelas da camada `marts` (`fact_sales`, dimensões e ponte de motivos de venda).
 
-- **Link público:** https://dbc-61d8a12f-9c38.cloud.databricks.com/dashboardsv3/01f1e2e694fb1db5a3fb7ee4571db86b/published
+- **Link:** https://dbc-61d8a12f-9c38.cloud.databricks.com/dashboardsv3/01f1e2e694fb1db5a3fb7ee4571db86b/published
 - **Definição (JSON):** [dashboard/adventure_works_sales.lvdash.json](../dashboard/adventure_works_sales.lvdash.json)
 
-O dashboard roda com credenciais embutidas: quem abre o link vê os dados sem
-precisar de acesso direto ao warehouse.
+O dashboard foi publicado com credenciais embutidas, então quem tem acesso ao
+workspace vê os dados sem precisar de permissão no warehouse. O workspace é
+Databricks Free Edition e o link exige login.
 
 ## Páginas e perguntas de negócio
 

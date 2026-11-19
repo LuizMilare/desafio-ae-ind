@@ -23,7 +23,8 @@ Postgres (AdventureWorks)  →  dlt  →  Databricks (raw)  →  dbt  →  marts
 | 1. Extração e carga (EL) | dlt copia as tabelas do Postgres para o schema `postgres_adventureworks` no Databricks | [src/Extract](src/Extract/README.md) |
 | 2. Transformação | dbt limpa, junta e modela os dados em três camadas | `models/` |
 | 3. Qualidade | testes nas fontes, nas chaves, nas relações e nas regras de negócio | `models/**/*.yml`, `tests/` |
-| 4. Visualização | dashboard Databricks AI/BI sobre as tabelas da camada `marts` | `dashboard/`, [docs/dashboard.md](docs/dashboard.md) |
+| 4. Análise exploratória | notebook que explora os marts e sustenta os insights e a escolha dos KPIs | [notebooks/](notebooks/eda_adventureworks_marts.ipynb) |
+| 5. Visualização | dashboard Databricks AI/BI sobre as tabelas da camada `marts` | `dashboard/`, [docs/dashboard.md](docs/dashboard.md) |
 
 ## Perguntas de negócio
 
@@ -129,8 +130,9 @@ A lista completa e a justificativa de cada regra estão em
 ## 4. Dashboard
 
 Dashboard publicado: [Adventure Works Sales](https://dbc-61d8a12f-9c38.cloud.databricks.com/dashboardsv3/01f1e2e694fb1db5a3fb7ee4571db86b/published).
-O link abre sem login, porque o dashboard usa credenciais embutidas. Se o
-warehouse SQL estiver desligado, a primeira carga demora alguns segundos.
+O workspace é Databricks Free Edition, que exige login para abrir o link. Quem
+não tem acesso ao workspace vê as três páginas nas imagens abaixo e no vídeo da
+demonstração; a definição completa está em `dashboard/`.
 
 | Página | O que mostra | Perguntas |
 |---|---|---|
@@ -216,6 +218,7 @@ itens na fato.
 | `models/` | modelos dbt (staging, intermediate e marts) e a documentação dos marts |
 | `tests/` | testes singulares de regras de negócio |
 | `src/Extract/` | script e instruções da etapa de EL com dlt |
+| `notebooks/` | análise exploratória dos marts (EDA) |
 | `dashboard/` | definição do dashboard AI/BI (JSON) |
 | `docs/regras_de_negocio.md` | definições das métricas e decisões de modelagem |
 | `docs/dashboard.md` | páginas, datasets e cálculos do dashboard |
