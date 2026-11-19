@@ -85,8 +85,6 @@ models:
         description: Total em frete da Order Header
       - name: totaldue
         description: Total devido da Order Header
-      - name: comment
-        description: Comentários da Order Header
       - name: orderqty
         description: 'Quantidade do produto na ordem. Grão: Sales Order Detail'
         data_tests:

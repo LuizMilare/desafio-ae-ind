@@ -30,7 +30,6 @@ with
             , salesorderheaders.taxamt
             , salesorderheaders.freight
             , salesorderheaders.totaldue
-            , salesorderheaders.comment
             , salesorderdetails.orderqty
             , salesorderdetails.unitprice
             , salesorderdetails.unitpricediscount

@@ -60,7 +60,11 @@ versionados.
 O dbt lê essas tabelas como fontes, declaradas em
 `models/staging/_sources.yml`. São 14 tabelas de origem: vendas (cabeçalho, item
 e motivos), produtos (produto, subcategoria e categoria), clientes (cliente,
-pessoa e loja), endereços (endereço, estado e país) e cartão de crédito.
+pessoa e loja), endereços (endereço, estado e país) e cartão de crédito. Elas vêm
+de três schemas do Postgres (`sales`, `person` e `production`), e só as colunas
+necessárias são extraídas: número, vencimento e dados de aprovação do cartão,
+linhas de endereço, código postal e comentários de pedido ficam de fora. A lista
+completa está em [src/Extract](src/Extract/README.md).
 
 <!-- print: docs/img/el-raw-tables.png (catálogo do Databricks com as tabelas brutas em postgres_adventureworks) -->
 
@@ -77,7 +81,7 @@ tests/            testes singulares de regras de negócio
 
 | Camada | Modelos | O que faz |
 |---|---|---|
-| staging | 14 | Renomeia e tipa as colunas de cada tabela de origem. Não carrega o número do cartão de crédito. |
+| staging | 14 | Renomeia e tipa as colunas de cada tabela de origem. Não lê dados sensíveis, que nem são extraídos. |
 | intermediate | 8 | Junta as tabelas de origem e calcula as medidas. |
 | marts | 8 | Modelo dimensional final, materializado como tabela. |
 

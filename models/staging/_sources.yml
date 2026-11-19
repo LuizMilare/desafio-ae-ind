@@ -90,7 +90,7 @@ sources:
               - unique
               - not_null
       - name: creditcard
-        description: Cartões de crédito usados nos pedidos. O número do cartão não é carregado para o dbt.
+        description: Cartões de crédito usados nos pedidos. O número do cartão, o vencimento e outros campos sensíveis não são extraídos do Postgres.
         columns:
           - name: creditcardid
             data_tests:
