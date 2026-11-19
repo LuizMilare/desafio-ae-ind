@@ -9,8 +9,13 @@ with
         from {{ ref('stg_postgres__stateprovince') }}
     )
 
+    , countryregions as (
+        select *
+        from {{ ref('stg_postgres__countryregion') }}
+    )
+
     , joined as (
-        select 
+        select
             addresses.pk_addressid
             , addresses.addressline1
             , addresses.addressline2
@@ -20,8 +25,10 @@ with
             , stateprovinces.stateprovincecode
             , stateprovinces.countryregioncode
             , stateprovinces.stateprovince_name
+            , countryregions.name as countryregion_name
         from addresses
         left join stateprovinces on addresses.fk_stateprovinceid = stateprovinces.pk_stateprovinceid
+        left join countryregions on stateprovinces.countryregioncode = countryregions.countryregioncode
     )
 
 select *

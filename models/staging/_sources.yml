@@ -68,3 +68,31 @@ sources:
             data_tests:
               - unique
               - not_null
+      - name: customer
+        description: Cadastro de clientes, ligado a uma pessoa e/ou a uma loja
+        columns:
+          - name: customerid
+            data_tests:
+              - unique
+              - not_null
+      - name: person
+        description: Cadastro de pessoas (clientes individuais e contatos de lojas)
+        columns:
+          - name: businessentityid
+            data_tests:
+              - unique
+              - not_null
+      - name: store
+        description: Cadastro de lojas revendedoras
+        columns:
+          - name: businessentityid
+            data_tests:
+              - unique
+              - not_null
+      - name: creditcard
+        description: Cartões de crédito usados nos pedidos. O número do cartão não é carregado para o dbt.
+        columns:
+          - name: creditcardid
+            data_tests:
+              - unique
+              - not_null

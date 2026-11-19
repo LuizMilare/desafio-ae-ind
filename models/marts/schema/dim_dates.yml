@@ -1,0 +1,26 @@
+
+models:
+  - name: dim_dates
+    description: Tabela de dimensão de datas (calendário), com um dia por linha, cobrindo os anos inteiros do primeiro ao último pedido
+    columns:
+      - name: pk_date
+        description: Chave primária de datas
+        data_tests:
+          - unique
+          - not_null
+      - name: calendar_year
+        description: Ano
+      - name: calendar_quarter
+        description: Trimestre do ano (1 a 4)
+      - name: calendar_month
+        description: Mês do ano (1 a 12)
+      - name: month_name
+        description: Nome do mês em inglês
+      - name: year_month
+        description: Ano e mês no formato yyyy-MM, útil para ordenar séries temporais
+      - name: day_of_month
+        description: Dia do mês
+      - name: weekday_name
+        description: Nome do dia da semana em inglês
+      - name: weekday_number
+        description: Número do dia da semana (1 = domingo, 7 = sábado)

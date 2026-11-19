@@ -1,0 +1,14 @@
+
+models:
+  - name: dim_credit_cards
+    description: Tabela de dimensão de cartões de crédito, com o tipo de cartão usado no pedido. O número do cartão não é exposto
+    columns:
+      - name: pk_creditcardid
+        description: Chave primária de cartões de crédito
+        data_tests:
+          - unique
+          - not_null
+      - name: cardtype
+        description: Tipo (bandeira) do cartão de crédito
+        data_tests:
+          - not_null
